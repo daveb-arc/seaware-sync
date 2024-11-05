@@ -1,0 +1,37 @@
+query getAgencies(
+    $first: Int!
+      $after: String) {
+    agencies(
+         # number of records to return
+        first: $first
+         # the cursor from the previous page of search results
+        after: $after
+        params: {
+          type: {
+            id: "AgencyType|A"
+          }
+          isInternal: false
+        }) {
+        edges {
+            node {
+              id            
+              key
+              name
+              consortiumType
+              isConsortium
+              useDefaultConsortium
+              defaultLanguage {
+                id
+              }
+            }
+            cursor
+        }
+        
+        pageInfo {
+          hasPreviousPage
+          hasNextPage
+          startCursor
+          endCursor  
+        }             
+    }
+}

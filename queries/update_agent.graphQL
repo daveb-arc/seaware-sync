@@ -1,0 +1,14 @@
+mutation updateRecord {
+
+  travelAgentUpdate(
+    input: {
+      id: "ID_VALUE"
+      agency:{
+        useDefaultConsortium: true
+      }
+    }) {
+    
+    clientMutationId
+    operationResult
+  }
+}

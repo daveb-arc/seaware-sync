@@ -1,0 +1,39 @@
+query getClients(
+    	$first: Int!
+      $after: String) {
+    clients(
+         # number of records to return
+        first: $first
+         # the cursor from the previous page of search results
+        after: $after
+        params: {
+          verifiedEmail: null
+        }) {
+        edges {
+            node {
+              id
+              key
+              firstName
+              lastName
+              eMail
+              guestType {
+                code
+              }
+              classifications {
+              	classification {
+                  type {
+                    id
+                  }
+                }
+            	}
+            }
+            cursor
+        }
+        pageInfo {
+          hasPreviousPage
+          hasNextPage
+          startCursor
+          endCursor  
+        }
+    }
+}

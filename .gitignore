@@ -1,0 +1,12 @@
+.project
+.settings
+.sfdx/
+settings.json
+Import/
+Incoming/
+status/
+*.properties
+key.txt
+*.csv
+~*
+*.zip

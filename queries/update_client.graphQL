@@ -1,0 +1,14 @@
+mutation updateRecord {
+
+  clientUpdate(
+    input: {
+      id: "ID_VALUE"
+      client:{
+        verifiedEmail: null
+      }
+    }) {
+    
+    clientMutationId
+    operationResult
+  }
+}

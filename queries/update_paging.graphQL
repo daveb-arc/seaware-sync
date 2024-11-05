@@ -1,0 +1,14 @@
+mutation updateRecord {
+
+  RECORD_TYPEUpdate(
+    input: {
+      id: "ID_VALUE"
+      RECORD_TYPE:{
+        isInternal: true
+      }
+    }) {
+    
+    clientMutationId
+    operationResult
+  }
+}
