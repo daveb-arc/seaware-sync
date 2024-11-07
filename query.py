@@ -19,11 +19,12 @@ class RecordType(Enum):
 class RecordMode(Enum):
     UPDATE = 1
     DELETE = 2
+    QUERY = 3
 
 def main():
 
   record_type = RecordType.AGENCY
-  record_mode = RecordMode.UPDATE
+  record_mode = RecordMode.QUERY
 
   # Record Types - agencyRemove, travelAgentRemove, clientRemove
   record_type_value = 'Unknown'
@@ -386,7 +387,6 @@ def da_flatten_list(record_type: RecordType, record_mode: RecordMode, json_list,
 
   # Create a list of dictionaries for CSV writing
   csv_data = []
-  skip_ids = []
   for index, item in enumerate(json_list):
       
       if isinstance(item, dict):
@@ -407,18 +407,19 @@ def da_flatten_list(record_type: RecordType, record_mode: RecordMode, json_list,
 
             should_process_record = (not item['node']['defaultLanguage'] == None and 'id' in item['node']['defaultLanguage'])
 
-          if (should_process_record and not id_value in skip_ids):
+          if (should_process_record):
 
             print('Processing ' + id_value + ' index: ' + str(index))
 
+            # Update Paging on all Records until 255 paging Jira ticket fixed
+            update_record_paging(record_type, id_value, access_token)
+
             if record_mode == RecordMode.DELETE:
                
+                print('Deleting ' + id_value + ' index: ' + str(index))
                 id_value = delete_record(record_type, id_value, access_token)
 
-            else:
-
-                # Update Paging on all Records until 255 paging Jira ticket fixed
-                update_record_paging(record_type, id_value, access_token)
+            elif record_mode == RecordMode.UPDATE:
 
                 should_update_record = (item['node']['isConsortium'] == False)
                 if should_update_record:
@@ -428,11 +429,11 @@ def da_flatten_list(record_type: RecordType, record_mode: RecordMode, json_list,
                 else:
                     id_value = None
 
-            if not id_value == None:
-              
-              print('Process error ' + id_value + ' index: ' + str(index))
-              skip_ids.append(id_value)
-          
+            else:
+                
+                # Query Records
+                print('Querying ' + id_value + ' index: ' + str(index))
+         
           flattened_item = flatten_json_lists(item)
 
           if next(iter(flattened_item.values())) == None:
@@ -446,9 +447,7 @@ def da_flatten_list(record_type: RecordType, record_mode: RecordMode, json_list,
           print(f"Skipping non-dict item in list '{record_type.name}': {item}")
 
   # Write to CSV file named after the key
-  csv_filename = f"{record_type.name}.csv"
-  write_to_csv(csv_data, csv_filename)
-  print(f"Written {csv_filename}")
+  write_to_csv(csv_data, f"{record_type.name}.csv")
 
 def da_flatten_list_bookings(json_list, key, reservationKey):
 
@@ -483,9 +482,7 @@ def da_flatten_list_bookings(json_list, key, reservationKey):
           print(f"Skipping non-dict item in list '{key}': {item}")
 
   # Write to CSV file named after the key
-  csv_filename = f"{key}.csv"
-  write_to_csv(csv_data, csv_filename)
-  print(f"Written {csv_filename}")
+  write_to_csv(csv_data, f"{key}.csv")
 
 def flatten_json_lists(y):
     
@@ -537,11 +534,13 @@ def write_to_csv(data, filename):
     if not bool(data):
         return
     
-    fileCheckPath = Path(filename)
+    full_filename = os.path.join("C:/repo/python-graphql/output_csv", filename)
+
+    fileCheckPath = Path(full_filename)
     fileCheckExists = fileCheckPath.is_file()
 
     """Write flattened data to a CSV file."""
-    with open(filename, 'a+', newline='') as csvfile:
+    with open(full_filename, 'a+', newline='') as csvfile:
         
         writer = csv.writer(csvfile)
 
@@ -553,6 +552,8 @@ def write_to_csv(data, filename):
         # Write rows
         for row in data:
             writer.writerow(row.values())
+
+    print(f"Written {full_filename}")
 
 # Using the special variable 
 # __name__

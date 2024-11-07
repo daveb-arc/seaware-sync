@@ -7,10 +7,7 @@ query getAgencies(
          # the cursor from the previous page of search results
         after: $after
         params: {
-          type: {
-            id: "AgencyType|A"
-          }
-          isInternal: false
+          id: "Agency|1111"
         }) {
         edges {
             node {
@@ -22,6 +19,13 @@ query getAgencies(
               useDefaultConsortium
               defaultLanguage {
                 id
+              }
+              addresses {
+                line1
+                city
+                state {
+                  name
+                }
               }
             }
             cursor
