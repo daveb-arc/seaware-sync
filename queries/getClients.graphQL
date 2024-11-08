@@ -7,7 +7,7 @@ query getClients(
          # the cursor from the previous page of search results
         after: $after
         params: {
-          verifiedEmail: null
+          allowWebAccess: true
         }) {
         edges {
             node {
@@ -16,6 +16,7 @@ query getClients(
               firstName
               lastName
               eMail
+              comments
               guestType {
                 code
               }

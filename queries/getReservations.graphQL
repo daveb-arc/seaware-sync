@@ -1,0 +1,367 @@
+fragment ReservationFragment on Reservation {
+    #Reservation Seaware ID
+    key
+    id
+
+    #Reservation migrated ID
+    altResId
+
+    #Reservation Status
+    status {
+        key
+    }
+
+    #Booking initial date
+    initialDate
+    originalInitialDate
+
+    #last Updated time
+    lastUpdated
+
+    confirmationDate
+
+    invoiceTotals {
+        invoiceTotal
+        payments
+        refunds
+        invoicePaid
+        hasTransactionsInProgress
+        chargeTotal
+        grandTotal
+        commissionTotal
+        commissionPaid
+        commissionDue
+        grossDue
+        grossDueClient
+        netDue
+        overpayment
+        overpaidCommission
+        grossUp
+        paidInFull
+        pendingPayments
+        pendingRefunds
+        pendingCommission
+        currentDue {
+            date
+            amount
+            type
+        }
+    }
+
+    #Emergency Contact
+    contact {
+        firstName
+        lastName
+        phones {
+            intlCode
+            number
+        }
+    }
+
+    shipRooms {
+        name
+    }
+
+    #Group info
+    group {
+        name
+        key
+    }
+    travelWith {
+        type {
+            code
+        }
+        dateTimeRange {
+            from
+            to
+        }
+        details {
+            reservation {
+                key guests {
+                    client {
+                        firstName lastName
+                    }
+                }
+            }
+            matched
+            main
+        }
+    }
+
+    guests {
+        seqN
+        #Personal information about guest
+
+        client {
+            key
+            altId
+            firstName
+            lastName
+            birthday
+            #Client photo as Base64 encoded string
+            checkInPhoto
+            checkInPhotoType
+            #Passport information
+            passport {
+                number
+                issuedBy
+                issuedOn
+                expirationDate
+            }
+            borderForms {
+                reservation {
+                    id
+                }
+                documentInfo {
+                    number
+                    type
+                    issuedCountry {
+                        name
+                    }
+                    issuedCity
+                    issuedDate
+                    expirationDate
+                }
+                visa {
+                    number
+                    issuedCountry {
+                        key
+                    }
+                    issuedCity
+                }
+            }
+            preferences {
+                type {
+                    key
+                }
+                code {
+                    name key
+                }
+                comments
+            }
+            programs {
+                program {
+                    id
+                    key
+                    name
+                }
+                activeDateRange {
+                    from
+                    to
+                }
+                comments
+                externalAccountNumber
+                accountData {
+                    ownerClient {
+                        firstName
+                        lastName
+                    }
+                }
+            }
+        }
+
+        land {
+            pkg {
+                code
+            }
+            effectiveDate
+            dateRange {
+                from
+                to
+            }
+            price
+            currency {
+                key
+            }
+        }
+        #Dining info
+        dinings {
+            restaurant {
+                code
+            }
+            date
+            startTime
+            duration
+        }
+        shorex {
+            pkg {
+                code
+            }
+            effectiveDate
+            dateRange {
+                from
+                to
+            }
+            name
+            description
+            price
+            currency {
+                key
+            }
+        }
+        #guest addons: Special requests + Amenities
+        addons {
+            addon {
+                type {
+                    key
+                }
+                key
+            }
+        }
+        transfer {
+            pkg {
+                code
+            }
+            dateTimeRange {
+                from
+                to
+            }
+            transfer {
+                from {
+                    name
+                    locationType
+                    ...on HasKey {
+                        key
+                    }
+                }
+                to {
+                    name
+                    locationType
+                    ...on HasKey {
+                        key
+                    }
+                }
+            }
+        }
+
+        shipRooms {
+            name
+        }
+
+        #guest voyages
+        voyages {
+
+            category {
+                ship {
+                    key
+                }
+                key
+            }
+            dateTimeRange {
+                from
+                to
+            }
+            currency {
+                key
+            }
+
+            sail {
+                from {
+                    dateTime
+                    sailRefIdent
+                    port {
+                        key
+                    }
+                }
+                to {
+                    dateTime
+                    sailRefIdent
+                    port {
+                        key
+                    }
+                }
+            }
+        }
+    }
+    userNotes {
+        subject {
+            key
+        }
+        comment
+        attributes {
+            attribute {
+                id
+            }
+            comment
+        }
+    }
+
+    agency {
+        #agency ID
+        key
+        #agency Name
+        name
+        addresses {
+            line1
+            line2
+            type {
+                key
+            }
+            city
+            country {
+                key name
+            }
+            state {
+                key
+            }
+            zip
+
+        }
+        #all agency phones
+        phones {
+            intlCode
+            number
+            type {
+                key
+            }
+        }
+    }
+    #agent info
+    agent {
+        #agent Seaware ID
+        key
+        firstName
+        lastName
+        email
+
+    }
+}
+
+query getReservations(
+    $first: Int!
+    $after: String
+    $resIDs: [String!]
+    $sailStart: Date
+    $clientID: IdOrKey
+    $clientLastName: String) {
+
+    reservations(
+        #number of records to return
+
+        first: $first
+        #the cursor from the previous page of search results
+        after: $after
+        params: {
+
+        keys: $resIDs,
+
+        #Search only for booked, cancelled and closed
+        #resStatuses: [{key: "BK"}, {key: "OP"}]
+        sailStartDate: $sailStart
+        client: $clientID
+        clientLastName: $clientLastName
+    }) {
+        edges {
+            node {
+                ...ReservationFragment
+            }
+            cursor
+        }
+        pageInfo {
+            hasPreviousPage
+            hasNextPage
+            startCursor
+            endCursor
+        }
+    }
+}

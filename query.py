@@ -5,9 +5,10 @@ from pathlib import Path
 import pandas as pd
 import os
 from enum import Enum
+from datetime import date
 
-#GRAPHQL_URL = 'https://testreservations.uncruise.com:3000/graphql'
-GRAPHQL_URL = 'https://devreservations.uncruise.com:3000/graphql'
+GRAPHQL_URL = 'https://testreservations.uncruise.com:3000/graphql'
+#GRAPHQL_URL = 'https://devreservations.uncruise.com:3000/graphql'
 #GRAPHQL_URL = 'https://reservations.uncruise.com:3000/graphql'
 
 class RecordType(Enum):
@@ -23,11 +24,11 @@ class RecordMode(Enum):
 
 def main():
 
-  record_type = RecordType.AGENCY
+  record_type = RecordType.RESERVATION
   record_mode = RecordMode.QUERY
 
-  # Record Types - agencyRemove, travelAgentRemove, clientRemove
-  record_type_value = 'Unknown'
+  # Record Types
+  record_type_value = 'reservations'
   if record_type == RecordType.CLIENT:
      record_type_value = 'clients'
   elif record_type == RecordType.AGENT:
@@ -35,58 +36,56 @@ def main():
   elif record_type == RecordType.AGENCY:
      record_type_value = 'agencies'
 
+  # Delete previous csv files
+  directory_to_search = "C:/repo/python-graphql/output_csv"
+  delete_files_in_directory(directory_to_search, record_type.name)
+
   # Initial request - no cursor
   json_res = fetch_items(record_type)
-  incoming_items = len(json_res.get('data').get(record_type_value).get('edges'))
-
   page_info = None
 
-  if "reservations" in json_res['data']: 
-    process_record(RecordType.RESERVATION, record_mode, json_res)
-    page_info = json_res['data'][record_type_value]['pageInfo']
-
-  elif "clients" in json_res['data']:
-    process_record(RecordType.CLIENT, record_mode, json_res)
-    page_info = json_res['data'][record_type_value]['pageInfo']
-
-  elif "travelAgents" in json_res['data']:
-    process_record(RecordType.AGENT, record_mode, json_res)
-    page_info = json_res['data'][record_type_value]['pageInfo']
-
-  elif "agencies" in json_res['data']:
-    process_record(RecordType.AGENCY, record_mode, json_res)
+  if record_type_value in json_res['data']: 
+    process_record(record_type, record_type_value, record_mode, json_res)
     page_info = json_res['data'][record_type_value]['pageInfo']
 
   else:
     print("unknown response type")
+    exit
 
-  # Check for next page
+  # Check for next page - max query is total of 500 regardless of the paging request size
   #
-  while page_info['hasNextPage'] or incoming_items == 500:
-
+  while page_info['hasNextPage']:
+    
     cursor = page_info['endCursor']
     access_token = json_res['extensions']['access_token']
     json_res = fetch_items(record_type, cursor, access_token) 
     incoming_items = len(json_res.get('data').get(record_type_value).get('edges'))
+    print("cursor: " + cursor + " access_token: " + access_token + " incoming_items: " + str(incoming_items))        
 
-    if "reservations" in json_res['data']: 
-      process_record(RecordType.RESERVATION, record_mode, json_res)
-      page_info = json_res['data'][record_type_value]['pageInfo']
-
-    elif "clients" in json_res['data']:
-      process_record(RecordType.CLIENT, record_mode, json_res)
-      page_info = json_res['data'][record_type_value]['pageInfo']
-
-    elif "travelAgents" in json_res['data']:
-      process_record(RecordType.AGENT, record_mode, json_res)
-      page_info = json_res['data'][record_type_value]['pageInfo']
-
-    elif "agencies" in json_res['data']:
-      process_record(RecordType.AGENCY, record_mode, json_res)
+    # Max query is 500 so if deleting then just restart the query
+    if incoming_items == 0 and record_mode == RecordMode.DELETE:
+      json_res = fetch_items(record_type) 
+       
+    if record_type_value in json_res['data']: 
+      process_record(record_type, record_type_value, record_mode, json_res)
       page_info = json_res['data'][record_type_value]['pageInfo']
 
     else:
       print("unknown query type")       
+
+def delete_files_in_directory(directory, search_string):
+    # Walk through the directory
+    for foldername, subfolders, filenames in os.walk(directory):
+        for filename in filenames:
+            # Check if the search string is in the filename
+            if search_string in filename:
+                file_path = os.path.join(foldername, filename)
+                try:
+                    # Delete the file
+                    os.remove(file_path)
+                    print(f"Deleted: {file_path}")
+                except Exception as e:
+                    print(f"Error deleting {file_path}: {e}")
 
 #####################################################
 #
@@ -102,8 +101,8 @@ def update_record_paging(record_type: RecordType, id_value, access_token):
 
   query = query.replace('ID_VALUE', id_value)
 
-  # Record Types - agencyRemove, travelAgentRemove, clientRemove
-  record_type_value = 'Unknown'
+  # Record Types
+  record_type_value = 'reservation'
   if record_type == RecordType.CLIENT:
      record_type_value = 'client'
   elif record_type == RecordType.AGENT:
@@ -266,31 +265,6 @@ mutation createRecord {
 
   return None
 
-def login():
-
-  login = """
-mutation login {
-
-  login(role:Internal ) {
-    token
-  }
-}
-"""
-
-  token = access_token
-
-  if cursor == None:
-    
-    #login to get token
-    #response = requests.post(url=GRAPHQL_URL, json={'query': query, 'variables': variables})
-    response = requests.post(url=GRAPHQL_URL, json={"query": login}) 
-  
-    if response.status_code == 200:
-      data = response.json()
-      token = data['data']['login']['token']
-    else:
-      raise Exception(f"Login failed: {response.status_code} {response.text}")
-
 #####################################################
 #
 # fetch_items - responsible for initial page and additional page results based on cursor
@@ -325,7 +299,7 @@ mutation login {
     'Authorization': f'Bearer {token}'
   }
 
-  input_query = 'Unknown'
+  input_query = 'Reservations'
   if record_type == RecordType.CLIENT:
      input_query = 'Clients'
   elif record_type == RecordType.AGENT:
@@ -337,8 +311,8 @@ mutation login {
     query = file.read()
 
   variables = {
-    'first': 500,  # Number of items to fetch (500 is the max)
-    'after': cursor  # Cursor for pagination
+    'first': 100  # Number of items to fetch (500 is the max)
+    ,'after': cursor  # Cursor for pagination
   }
 
   response = requests.post(url=GRAPHQL_URL, json={'query': query, 'variables': variables}, headers=headers) 
@@ -354,34 +328,28 @@ mutation login {
 # process_record - 
 #
 #####################################################
-def process_record(record_type: RecordType, record_mode: RecordMode, json_res):
+def process_record(record_type: RecordType, record_type_value, record_mode: RecordMode, json_res):
 
   # Flatten the JSON data (results)
   flattened_data = flatten_json_results(json_res)
 
-  bookingUpsertFile = Path(record_type.name + 'Upsert.csv')
-  bookingUpsertFileExists = bookingUpsertFile.is_file()
+  bookingUpsertFile = os.path.join("C:/repo/python-graphql/output_csv", f"{record_type.name}Upsert.csv")
+  bookingUpsertFileExists = Path(bookingUpsertFile).is_file()
 
   # Write to CSV file
-  with open(record_type.name + 'Upsert.csv', 'a+', newline='') as csvfile:
+  with open(bookingUpsertFile, 'a+', newline='') as csvfile:
       writer = csv.DictWriter(csvfile, fieldnames=flattened_data.keys())
       if not bookingUpsertFileExists:
           writer.writeheader()
       writer.writerow(flattened_data)
 
-  # Record Types - agencyRemove, travelAgentRemove, clientRemove
-  record_type_value = 'Unknown'
-  if record_type == RecordType.CLIENT:
-     record_type_value = 'clients'
-  elif record_type == RecordType.AGENT:
-     record_type_value = 'travelAgents'
-  elif record_type == RecordType.AGENCY:
-     record_type_value = 'agencies'
-  
   edges = json_res.get('data').get(record_type_value).get('edges')
   access_token = json_res['extensions']['access_token']
 
   da_flatten_list(record_type, record_mode, edges, access_token)
+
+  if record_type == RecordType.RESERVATION:
+    da_flatten_list_bookings(edges, record_type.name + '_Booking', None)
 
 def da_flatten_list(record_type: RecordType, record_mode: RecordMode, json_list, access_token):
 
@@ -407,12 +375,16 @@ def da_flatten_list(record_type: RecordType, record_mode: RecordMode, json_list,
 
             should_process_record = (not item['node']['defaultLanguage'] == None and 'id' in item['node']['defaultLanguage'])
 
+          elif record_type == RecordType.RESERVATION:
+             
+             should_process_record = True
+
           if (should_process_record):
 
             print('Processing ' + id_value + ' index: ' + str(index))
 
             # Update Paging on all Records until 255 paging Jira ticket fixed
-            update_record_paging(record_type, id_value, access_token)
+            #update_record_paging(record_type, id_value, access_token)
 
             if record_mode == RecordMode.DELETE:
                
@@ -421,7 +393,9 @@ def da_flatten_list(record_type: RecordType, record_mode: RecordMode, json_list,
 
             elif record_mode == RecordMode.UPDATE:
 
-                should_update_record = (item['node']['isConsortium'] == False)
+                #should_update_record = (item['node']['isConsortium'] == False)
+                should_update_record = True
+
                 if should_update_record:
 
                     print('Updating ' + id_value + ' index: ' + str(index))
@@ -457,26 +431,27 @@ def da_flatten_list_bookings(json_list, key, reservationKey):
       
       if isinstance(item, dict):
           
-          flattened_item = flatten_json_lists(item)
+          flattened_items = flatten_json_lists(item)
 
-          if next(iter(flattened_item.values())) == None:
+          if next(iter(flattened_items.values())) == None:
               continue
           
-          reservationKey = ''
-          if next(iter(flattened_item.keys())) == 'node_id':
-            reservationKey = next(iter(flattened_item.values()))
+          if next(iter(flattened_items.keys())) == 'node_key':
+            reservationKey = next(iter(flattened_items.values()))
 
-          # Add an identifier for each item in the list  
-          flattened_item['index'] = index
+          custom_items = {'index': index, 'reservation': reservationKey}
+
+          flattened_item = {**custom_items, **flattened_items}
+
           csv_data.append(flattened_item)
 
           if not item.get('node') == None and not item.get('node').get('guests') == None:
             guests = item.get('node').get('guests')
-            da_flatten_list_bookings(guests, 'bookings_guests', reservationKey)
+            da_flatten_list_bookings(guests, RecordType.RESERVATION.name + '_Guests', reservationKey)
 
           if not item.get('node') == None and not item.get('node').get('agency') == None:
             agencies = item.get('node').get('agency')
-            da_flatten_list_bookings(agencies, 'bookings_agencies', reservationKey)
+            da_flatten_list_bookings(agencies, RecordType.RESERVATION.name + '_Agencies', reservationKey)
 
       else:
           print(f"Skipping non-dict item in list '{key}': {item}")
@@ -498,8 +473,10 @@ def flatten_json_lists(y):
 
         # If it's a list, return the entire list for further processing
         elif isinstance(x, list):
-            out[name[:-1]] = x  # Save the list under the key
-
+        
+          for i, sub_item in enumerate(x):
+            flatten(sub_item, name + str(i) + '_')
+               
         else:
             out[name[:-1]] = x  # Remove the trailing underscore
 

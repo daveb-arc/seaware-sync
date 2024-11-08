@@ -7,7 +7,6 @@ query getAgents(
          # the cursor from the previous page of search results
         after: $after
         params: {
-          activeOnly: true
         }) {
         edges {
             node {
@@ -15,6 +14,7 @@ query getAgents(
               key
               firstName
               lastName    
+              comments
               iatan {
                 holderName
               }
