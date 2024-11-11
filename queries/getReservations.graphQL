@@ -97,6 +97,12 @@ fragment ReservationFragment on Reservation {
             altId
             firstName
             lastName
+            middleName
+            title {
+                id
+                key
+                sex
+            }
             birthday
             #Client photo as Base64 encoded string
             checkInPhoto
@@ -331,6 +337,7 @@ query getReservations(
     $first: Int!
     $after: String
     $resIDs: [String!]
+	$resStatusVals: [IdOrKey!]
     $sailStart: Date
     $clientID: IdOrKey
     $clientLastName: String) {
@@ -345,8 +352,7 @@ query getReservations(
 
         keys: $resIDs,
 
-        #Search only for booked, cancelled and closed
-        #resStatuses: [{key: "BK"}, {key: "OP"}]
+        resStatuses: $resStatusVals
         sailStartDate: $sailStart
         client: $clientID
         clientLastName: $clientLastName

@@ -18,6 +18,10 @@ query getAgencies(
               isConsortium
               useDefaultConsortium
               comments
+              type {
+                id
+                key
+              }
               defaultLanguage {
                 id
               }

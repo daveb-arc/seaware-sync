@@ -5,6 +5,7 @@ mutation updateRecord {
       id: "ID_VALUE"
       agency:{
         isInternal: false
+        useDefaultConsortium: true
       }
     }) {
     

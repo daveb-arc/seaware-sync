@@ -24,8 +24,35 @@ class RecordMode(Enum):
 
 def main():
 
+  import sys
+
+  #
+  # Required Parameters
+  #
+
+  record_type_input = str(sys.argv[1])
+  record_mode_input = str(sys.argv[2])
+
+  if len(sys.argv) < 3:
+      print("Calling error - missing required inputs.  Expecting " +
+              "RecordType RecordMode\n")
+      return
+
+  print("\nIncoming required parameters: " +
+          "RecordType: {} RecordMode: {} sys.argv {}\n"
+          .format(record_type_input, record_mode_input, sys.argv))
+
   record_type = RecordType.RESERVATION
+  if record_type_input == RecordType.AGENCY.name:
+     record_type = RecordType.AGENCY
+  elif record_type_input == RecordType.AGENT.name:
+     record_type = RecordType.AGENT
+
   record_mode = RecordMode.QUERY
+  if record_mode_input == RecordMode.UPDATE.name:
+     record_mode = RecordMode.UPDATE
+  elif record_mode_input == RecordMode.DELETE.name:
+     record_mode = RecordMode.DELETE
 
   # Record Types
   record_type_value = 'reservations'
@@ -37,7 +64,7 @@ def main():
      record_type_value = 'agencies'
 
   # Delete previous csv files
-  directory_to_search = "C:/repo/python-graphql/output_csv"
+  directory_to_search = "C:/repo/seaware-sync/output_csv"
   delete_files_in_directory(directory_to_search, record_type.name)
 
   # Initial request - no cursor
@@ -58,13 +85,14 @@ def main():
     
     cursor = page_info['endCursor']
     access_token = json_res['extensions']['access_token']
-    json_res = fetch_items(record_type, cursor, access_token) 
+#    json_res = fetch_items(record_type, cursor, access_token) 
+
+    # Max query is 500 so if deleting or paging update then just restart the query
+    json_res = fetch_items(record_type) 
+
     incoming_items = len(json_res.get('data').get(record_type_value).get('edges'))
     print("cursor: " + cursor + " access_token: " + access_token + " incoming_items: " + str(incoming_items))        
 
-    # Max query is 500 so if deleting then just restart the query
-    if incoming_items == 0 and record_mode == RecordMode.DELETE:
-      json_res = fetch_items(record_type) 
        
     if record_type_value in json_res['data']: 
       process_record(record_type, record_type_value, record_mode, json_res)
@@ -96,7 +124,7 @@ def delete_files_in_directory(directory, search_string):
 def update_record_paging(record_type: RecordType, id_value, access_token):
    
   query = "Unknown"
-  with open('queries/update_paging.graphQL', 'r') as file:
+  with open('C:/repo/seaware-sync/queries/update_paging.graphQL', 'r') as file:
     query = file.read()
 
   query = query.replace('ID_VALUE', id_value)
@@ -138,7 +166,7 @@ def update_record_paging(record_type: RecordType, id_value, access_token):
 def update_record(record_type: RecordType, id_value, access_token):
    
   query = "Unknown"
-  with open('queries/update_' + record_type.name.lower() + '.graphQL', 'r') as file:
+  with open('C:/repo/seaware-sync/queries/update_' + record_type.name.lower() + '.graphQL', 'r') as file:
     query = file.read()
 
   query = query.replace('ID_VALUE', id_value)
@@ -307,7 +335,7 @@ mutation login {
   elif record_type == RecordType.AGENCY:
      input_query = 'Agencies'
 
-  with open('queries/get' + input_query + '.graphQL', 'r') as file:
+  with open('C:/repo/seaware-sync/queries/get' + input_query + '.graphQL', 'r') as file:
     query = file.read()
 
   variables = {
@@ -333,7 +361,7 @@ def process_record(record_type: RecordType, record_type_value, record_mode: Reco
   # Flatten the JSON data (results)
   flattened_data = flatten_json_results(json_res)
 
-  bookingUpsertFile = os.path.join("C:/repo/python-graphql/output_csv", f"{record_type.name}Upsert.csv")
+  bookingUpsertFile = os.path.join("C:/repo/seaware-sync/output_csv", f"{record_type.name}Upsert.csv")
   bookingUpsertFileExists = Path(bookingUpsertFile).is_file()
 
   # Write to CSV file
@@ -393,8 +421,8 @@ def da_flatten_list(record_type: RecordType, record_mode: RecordMode, json_list,
 
             elif record_mode == RecordMode.UPDATE:
 
-                #should_update_record = (item['node']['isConsortium'] == False)
-                should_update_record = True
+                should_update_record = (item['node']['isConsortium'] == False and item['node']['type'] != None and item['node']['type']['id'] == 'AgencyType|A')
+                #should_update_record = True
 
                 if should_update_record:
 
@@ -511,7 +539,7 @@ def write_to_csv(data, filename):
     if not bool(data):
         return
     
-    full_filename = os.path.join("C:/repo/python-graphql/output_csv", filename)
+    full_filename = os.path.join("C:/repo/seaware-sync/output_csv", filename)
 
     fileCheckPath = Path(full_filename)
     fileCheckExists = fileCheckPath.is_file()
