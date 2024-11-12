@@ -10,6 +10,15 @@ mutation updateTravelAgentRecord {
         password: "nopassword"
         allowWebAccess: false
         canAccessAgencyData: false
+        agencyLink: {
+            agency: {
+                key: "AGENCYKEY_VALUE"
+            }
+            dateRange: {
+                from: "2024-01-01"
+                to: "2099-01-01"
+            }
+        }
       }
     }) {
     

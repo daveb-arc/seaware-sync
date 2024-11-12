@@ -470,6 +470,12 @@ mutation login {
 
   query = query.replace('EMAIL_VALUE', safeValue)
 
+  safeValue = ''
+  if not pd.isna(row['Account.Seaware_Id__c']) and not str(row['Account.Seaware_Id__c']).strip() == "":
+    safeValue = row['Account.Seaware_Id__c']
+
+  query = query.replace('AGENCYKEY_VALUE', str(safeValue))
+
   response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
   if response.status_code != 200:
     raise Exception(f"Login failed: {response.status_code} {response.text}")
