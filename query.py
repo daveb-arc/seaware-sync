@@ -86,10 +86,13 @@ def process_salesforce_clients(record_type: RecordType, record_mode: RecordMode)
     
   import pandas as pd
 
-  data_frame = pd.read_csv('C:/repo/Salesforce-Exporter-Private/Clients/SEAWARE/Salesforce-Exporter/Clients/SEAWARE/Export/Client-Prod.csv')
+  data_frame = pd.read_csv('C:/repo/Salesforce-Exporter-Private/Clients/SEAWARE/Salesforce-Exporter/Clients/SEAWARE/Export/Contact-Prod.csv')
 
   for index, row in data_frame.iterrows():
 
+      if row['Contact_Type__c'] != 'Passenger':
+         continue
+      
       # Query to setup output file for processing in Excel PowerQuery update to SF
       json_res = process_seaware(record_type, RecordMode.QUERY, row)
 
@@ -110,9 +113,12 @@ def process_salesforce_agents(record_type: RecordType, record_mode: RecordMode):
     
   import pandas as pd
 
-  data_frame = pd.read_csv('C:/repo/Salesforce-Exporter-Private/Clients/SEAWARE/Salesforce-Exporter/Clients/SEAWARE/Export/Agent-Prod.csv')
+  data_frame = pd.read_csv('C:/repo/Salesforce-Exporter-Private/Clients/SEAWARE/Salesforce-Exporter/Clients/SEAWARE/Export/Contact-Prod.csv')
 
   for index, row in data_frame.iterrows():
+
+      if row['Contact_Type__c'] != 'Agent':
+         continue
 
       # Query to setup output file for processing in Excel PowerQuery update to SF
       json_res = process_seaware(record_type, RecordMode.QUERY, row)
@@ -134,9 +140,12 @@ def process_salesforce_agencies(record_type: RecordType, record_mode: RecordMode
     
   import pandas as pd
 
-  data_frame = pd.read_csv('C:/repo/Salesforce-Exporter-Private/Clients/SEAWARE/Salesforce-Exporter/Clients/SEAWARE/Export/Agency-Prod.csv')
+  data_frame = pd.read_csv('C:/repo/Salesforce-Exporter-Private/Clients/SEAWARE/Salesforce-Exporter/Clients/SEAWARE/Export/Contact-Prod.csv')
 
   for index, row in data_frame.iterrows():
+
+      if row['Contact_Type__c'] != 'Agent':
+         continue
 
       # Query to setup output file for processing in Excel PowerQuery update to SF
       json_res = process_seaware(record_type, RecordMode.QUERY, row)
@@ -517,8 +526,8 @@ mutation login {
     query = file.read()
 
   # Id	Name	CustomerID__c	Seaware_Id__c	FirstName	LastName	Email	MiddleName	Title
-  query = query.replace('ALTID_VALUE', row['AgencyID__c'])
-  query = query.replace('NAME_VALUE', row['Name'])
+  query = query.replace('ALTID_VALUE', row['Account.AgencyID__c'])
+  query = query.replace('NAME_VALUE', row['Account.Name'])
 
   response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
   if response.status_code != 200:
@@ -562,21 +571,21 @@ mutation login {
 
   # Columns: Id	Name	AgencyID__c	Seaware_Id__c	AgencyType__c	Consortium__c	Consortium_Start_Date__c	Consortium_End_Date__c	IATA_Number__c
   query = query.replace('AGENCYID_VALUE', id_value)
-  query = query.replace('AGENCYNAME_VALUE', row['Name'])
-  query = query.replace('AGENGYTYPE_VALUE', row['AgencyType__c'])
+  query = query.replace('AGENCYNAME_VALUE', row['Account.Name'])
+  query = query.replace('AGENGYTYPE_VALUE', row['Account.AgencyType__c'])
 
   consortium = ''
   is_consortium = 'false'
-  if not pd.isna(row['Consortium__c']) and not str(row['Consortium__c']).strip() == "":
+  if not pd.isna(row['Account.Consortium__c']) and not str(row['Account.Consortium__c']).strip() == "":
     is_consortium = 'true'
-    consortium = row['Consortium__c']
+    consortium = row['Account.Consortium__c']
 
   query = query.replace('CONSORTIUMTYPE_VALUE', consortium)
   query = query.replace('ISCONORTIUM_VALUE', is_consortium)
 
   iata = ''
-  if not pd.isna(row['IATA_Number__c']) and not str(row['IATA_Number__c']).strip() == "":
-     iata = row['IATA_Number__c']
+  if not pd.isna(row['Account.IATA_Number__c']) and not str(row['Account.IATA_Number__c']).strip() == "":
+     iata = row['Account.IATA_Number__c']
 
   query = query.replace('IATA_VALUE', iata)
   
