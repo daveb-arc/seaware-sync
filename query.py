@@ -68,15 +68,15 @@ def main():
 
     if record_type == RecordType.AGENCY:
 
-      process_salesforce_records(record_type, record_mode)       
+      process_salesforce_agencies(record_type, record_mode)       
 
     elif record_type == RecordType.AGENT:
 
-      process_salesforce_records(record_type, record_mode) 
+      process_salesforce_agents(record_type, record_mode) 
 
     elif record_type == RecordType.CLIENT:
 
-      process_salesforce_records(record_type, record_mode)       
+      process_salesforce_clients(record_type, record_mode)       
 
   else:
 
@@ -480,7 +480,7 @@ mutation login {
     query = file.read()
 
   # Id	Name	CustomerID__c	Seaware_Id__c	FirstName	LastName	Email	MiddleName	Title
-  query = query.replace('ALTID_VALUE', row['CustomerID__c'])
+  query = query.replace('ALTID_VALUE', row['AgencyID__c'])
   query = query.replace('NAME_VALUE', row['Name'])
 
   response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
@@ -705,17 +705,35 @@ mutation login {
 
   input_query = 'Reservations'
   if record_type == RecordType.CLIENT:
-     input_query = 'Clients'
-  elif record_type == RecordType.AGENT:
-     input_query = 'Agents'
-  elif record_type == RecordType.AGENCY:
-     input_query = 'Agencies'
+     
+    input_query = 'Clients'
 
+  elif record_type == RecordType.AGENT:
+     
+    input_query = 'Agents'
+
+  elif record_type == RecordType.AGENCY:
+    
+    input_query = 'Agencies'
+
+  query = None
   with open('C:/repo/seaware-sync/queries/get' + input_query + '.graphQL', 'r') as file:
     query = file.read()
 
-  # Columns: Id	Name	CustomerID__c	Seaware_Id__c	FirstName	LastName	Email	MiddleName	Title
-  query = query.replace('ALTID_VALUE', row['CustomerID__c'])
+  if record_type == RecordType.CLIENT:
+     
+    # Columns: Id	Name	CustomerID__c	Seaware_Id__c	FirstName	LastName	Email	MiddleName	Title
+    query = query.replace('ALTID_VALUE', row['CustomerID__c'])
+
+  elif record_type == RecordType.AGENT:
+     
+    # Columns: Id	Name	FirstName	LastName	Email	RepresentativeID__c
+    query = query.replace('ALTID_VALUE', row['ReprsentativeID__c'])
+
+  elif record_type == RecordType.AGENCY:
+    
+    # Columns: Id	Name	AgencyID__c	Seaware_Id__c
+    query = query.replace('ALTID_VALUE', row['AgencyID__c'])
 
   variables = {
     'first': 100  # Number of items to fetch (500 is the max)
