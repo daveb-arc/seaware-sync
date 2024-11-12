@@ -90,7 +90,7 @@ def process_salesforce_clients(record_type: RecordType, record_mode: RecordMode)
 
   for index, row in data_frame.iterrows():
 
-      if row['Contact_Type__c'] != 'Passenger':
+      if row['Contact_Type__c'] != 'Guest':
          continue
       
       # Query to setup output file for processing in Excel PowerQuery update to SF
@@ -117,7 +117,7 @@ def process_salesforce_agents(record_type: RecordType, record_mode: RecordMode):
 
   for index, row in data_frame.iterrows():
 
-      if row['Contact_Type__c'] != 'Agent':
+      if row['Contact_Type__c'] != 'Representative':
          continue
 
       # Query to setup output file for processing in Excel PowerQuery update to SF
@@ -144,7 +144,7 @@ def process_salesforce_agencies(record_type: RecordType, record_mode: RecordMode
 
   for index, row in data_frame.iterrows():
 
-      if row['Contact_Type__c'] != 'Agent':
+      if row['Contact_Type__c'] != 'Representative':
          continue
 
       # Query to setup output file for processing in Excel PowerQuery update to SF
@@ -481,7 +481,7 @@ mutation login {
 
   safeValue = ''
   if not pd.isna(row['Account.Seaware_Id__c']) and not str(row['Account.Seaware_Id__c']).strip() == "":
-    safeValue = row['Account.Seaware_Id__c']
+    safeValue = round(row['Account.Seaware_Id__c'])
 
   query = query.replace('AGENCYKEY_VALUE', str(safeValue))
 
@@ -794,7 +794,7 @@ mutation login {
   elif record_type == RecordType.AGENCY:
     
     # Columns: Id	Name	AgencyID__c	Seaware_Id__c
-    query = query.replace('ALTID_VALUE', row['AgencyID__c'])
+    query = query.replace('ALTID_VALUE', row['Account.AgencyID__c'])
 
   variables = {
     'first': 100  # Number of items to fetch (500 is the max)
