@@ -1,0 +1,19 @@
+mutation createTravelAgentRecord {
+  
+  travelAgentCreate(
+    input: {
+      agent: {
+        altId: "ALTID_VALUE"
+        firstName: "FIRSTNAME_VALUE"
+        lastName: "LASTNAME_VALUE"
+      }
+    }) {
+    
+    result {
+      id
+      key
+    }
+    clientMutationId
+    operationResult
+  }
+}

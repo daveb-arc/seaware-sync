@@ -93,21 +93,23 @@ fragment ReservationFragment on Reservation {
         #Personal information about guest
 
         client {
+            id
             key
             altId
             firstName
             lastName
             middleName
-            title {
-                id
-                key
-                sex
-            }
+            eMail
             birthday
             #Client photo as Base64 encoded string
             checkInPhoto
             checkInPhotoType
             #Passport information
+            title {
+                id
+                key
+                sex
+            }
             passport {
                 number
                 issuedBy

@@ -1,0 +1,19 @@
+mutation createClientRecord {
+  
+  clientCreate(
+    input: {
+      client: {
+        altId: "ALTID_VALUE"
+        firstName: "FIRSTNAME_VALUE"
+        lastName: "LASTNAME_VALUE"
+      }
+    }) {
+    
+    result {
+      id
+      key
+    }
+    clientMutationId
+    operationResult
+  }
+}

@@ -7,26 +7,83 @@ query getClients(
          # the cursor from the previous page of search results
         after: $after
         params: {
-          allowWebAccess: true
+          altId: "ALTID_VALUE"
         }) {
         edges {
             node {
               id
               key
+              altId
               firstName
               lastName
+              middleName
               eMail
-              comments
-              guestType {
-                code
+              birthday
+              #Client photo as Base64 encoded string
+              checkInPhoto
+              checkInPhotoType
+              #Passport information
+              title {
+                  id
+                  key
+                  sex
               }
-              classifications {
-              	classification {
-                  type {
-                    id
+              passport {
+                  number
+                  issuedBy
+                  issuedOn
+                  expirationDate
+              }
+              borderForms {
+                  reservation {
+                      id
                   }
-                }
-            	}
+                  documentInfo {
+                      number
+                      type
+                      issuedCountry {
+                          name
+                      }
+                      issuedCity
+                      issuedDate
+                      expirationDate
+                  }
+                  visa {
+                      number
+                      issuedCountry {
+                          key
+                      }
+                      issuedCity
+                  }
+              }
+              preferences {
+                  type {
+                      key
+                  }
+                  code {
+                      name key
+                  }
+                  comments
+              }
+              programs {
+                  program {
+                      id
+                      key
+                      name
+                  }
+                  activeDateRange {
+                      from
+                      to
+                  }
+                  comments
+                  externalAccountNumber
+                  accountData {
+                      ownerClient {
+                          firstName
+                          lastName
+                      }
+                  }
+              }
             }
             cursor
         }

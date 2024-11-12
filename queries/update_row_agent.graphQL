@@ -1,0 +1,19 @@
+mutation updateTravelAgentRecord {
+  
+  travelAgentUpdate(
+    input: {
+      id: "Agent|ID_VALUE"
+      agent:{
+        firstName: "FIRSTNAME_VALUE"
+        lastName: "LASTNAME_VALUE"
+      }
+    }) {
+    
+    result {
+      id
+      key
+    }
+    clientMutationId
+    operationResult
+  }
+}

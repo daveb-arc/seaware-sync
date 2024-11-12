@@ -1,0 +1,18 @@
+mutation updateRecord {
+
+  clientUpdate(
+    input: {
+      id: "Client|ID_VALUE"
+      client:{
+        altId: "ALTID_VALUE"
+        firstName: "FIRSTNAME_VALUE"
+        lastName: "LASTNAME_VALUE"
+        eMail: "EMAIL_VALUE"
+        birthday: "BIRTHDAY_VALUE"
+      }
+    }) {
+    
+    clientMutationId
+    operationResult
+  }
+}

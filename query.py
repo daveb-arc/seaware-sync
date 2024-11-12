@@ -21,6 +21,8 @@ class RecordMode(Enum):
     UPDATE = 1
     DELETE = 2
     QUERY = 3
+    SFPUSH = 4
+    INSERT = 5
 
 def main():
 
@@ -42,33 +44,135 @@ def main():
           "RecordType: {} RecordMode: {} sys.argv {}\n"
           .format(record_type_input, record_mode_input, sys.argv))
 
+  # Delete previous csv files
+  directory_to_search = "C:/repo/seaware-sync/output_csv"
+  delete_files_in_directory(directory_to_search, '.csv')
+
   record_type = RecordType.RESERVATION
   if record_type_input == RecordType.AGENCY.name:
      record_type = RecordType.AGENCY
   elif record_type_input == RecordType.AGENT.name:
      record_type = RecordType.AGENT
+  elif record_type_input == RecordType.CLIENT.name:
+     record_type = RecordType.CLIENT
 
   record_mode = RecordMode.QUERY
   if record_mode_input == RecordMode.UPDATE.name:
      record_mode = RecordMode.UPDATE
   elif record_mode_input == RecordMode.DELETE.name:
      record_mode = RecordMode.DELETE
+  elif record_mode_input == RecordMode.SFPUSH.name:
+     record_mode = RecordMode.SFPUSH
+
+  if record_mode_input == RecordMode.SFPUSH.name:
+
+    if record_type == RecordType.AGENCY:
+
+      process_salesforce_records(record_type, record_mode)       
+
+    elif record_type == RecordType.AGENT:
+
+      process_salesforce_records(record_type, record_mode) 
+
+    elif record_type == RecordType.CLIENT:
+
+      process_salesforce_records(record_type, record_mode)       
+
+  else:
+
+    process_seaware(record_type, record_mode)
+
+def process_salesforce_clients(record_type: RecordType, record_mode: RecordMode):
+    
+  import pandas as pd
+
+  data_frame = pd.read_csv('C:/repo/Salesforce-Exporter-Private/Clients/SEAWARE/Salesforce-Exporter/Clients/SEAWARE/Export/Client-Prod.csv')
+
+  for index, row in data_frame.iterrows():
+
+      # Query to setup output file for processing in Excel PowerQuery update to SF
+      json_res = process_seaware(RecordType.CLIENT, RecordMode.QUERY, row)
+
+      if len(json_res.get('data').get('clients').get('edges')) <= 0:
+
+        # Attempt to insert - Seaware DB will fail call if altid already set on a record
+        insert_row_client(RecordType.CLIENT, RecordMode.INSERT, row)
+
+        # Query to setup output file for processing in Excel PowerQuery update to SF
+        process_seaware(RecordType.CLIENT, RecordMode.QUERY, row)
+
+      else:
+
+        id_value = json_res.get('data').get('clients').get('edges')[0].get('node').get('key')
+
+        # Update Request for complete field updates
+        update_row_client(RecordType.CLIENT, RecordMode.UPDATE, row, id_value)
+
+def process_salesforce_agents(record_type: RecordType, record_mode: RecordMode):
+    
+  import pandas as pd
+
+  data_frame = pd.read_csv('C:/repo/Salesforce-Exporter-Private/Clients/SEAWARE/Salesforce-Exporter/Clients/SEAWARE/Export/Agent-Prod.csv')
+
+  for index, row in data_frame.iterrows():
+
+      # Query to setup output file for processing in Excel PowerQuery update to SF
+      json_res = process_seaware(RecordType.AGENT, RecordMode.QUERY, row)
+
+      if len(json_res.get('data').get('travelAgents').get('edges')) <= 0:
+
+        # Attempt to insert - Seaware DB will fail call if altid already set on a record
+        insert_row_agent(RecordType.AGENT, RecordMode.INSERT, row)
+
+        # Query to setup output file for processing in Excel PowerQuery update to SF
+        process_seaware(RecordType.AGENT, RecordMode.QUERY, row)
+
+      else:
+
+        id_value = json_res.get('data').get('agents').get('edges')[0].get('node').get('key')
+
+        # Update Request for complete field updates
+        update_row_agent(RecordType.CLIENT, RecordMode.UPDATE, row, id_value)
+
+def process_salesforce_agencies(record_type: RecordType, record_mode: RecordMode):
+    
+  import pandas as pd
+
+  data_frame = pd.read_csv('C:/repo/Salesforce-Exporter-Private/Clients/SEAWARE/Salesforce-Exporter/Clients/SEAWARE/Export/Agency-Prod.csv')
+
+  for index, row in data_frame.iterrows():
+
+      # Query to setup output file for processing in Excel PowerQuery update to SF
+      json_res = process_seaware(RecordType.AGENCY, RecordMode.QUERY, row)
+
+      if len(json_res.get('data').get('agencies').get('edges')) <= 0:
+
+        # Attempt to insert - Seaware DB will fail call if altid already set on a record
+        insert_row_agency(RecordType.AGENCY, RecordMode.INSERT, row)
+
+        # Query to setup output file for processing in Excel PowerQuery update to SF
+        process_seaware(RecordType.AGENCY, RecordMode.QUERY, row)
+
+      else:
+
+        id_value = json_res.get('data').get('agencies').get('edges')[0].get('node').get('key')
+
+        # Update Request for complete field updates
+        update_row_agency(RecordType.AGENCY, RecordMode.UPDATE, row, id_value)
+
+def process_seaware(record_type: RecordType, record_mode: RecordMode, row = None): 
 
   # Record Types
   record_type_value = 'reservations'
   if record_type == RecordType.CLIENT:
-     record_type_value = 'clients'
+    record_type_value = 'clients'
   elif record_type == RecordType.AGENT:
-     record_type_value = 'travelAgents'
+    record_type_value = 'travelAgents'
   elif record_type == RecordType.AGENCY:
-     record_type_value = 'agencies'
-
-  # Delete previous csv files
-  directory_to_search = "C:/repo/seaware-sync/output_csv"
-  delete_files_in_directory(directory_to_search, record_type.name)
+    record_type_value = 'agencies'
 
   # Initial request - no cursor
-  json_res = fetch_items(record_type)
+  json_res = fetch_items(record_type, row)
   page_info = None
 
   if record_type_value in json_res['data']: 
@@ -77,7 +181,7 @@ def main():
 
   else:
     print("unknown response type")
-    exit
+    return json_res
 
   # Check for next page - max query is total of 500 regardless of the paging request size
   #
@@ -85,21 +189,22 @@ def main():
     
     cursor = page_info['endCursor']
     access_token = json_res['extensions']['access_token']
-#    json_res = fetch_items(record_type, cursor, access_token) 
+#    json_res = fetch_items(record_type, row, cursor, access_token) 
 
     # Max query is 500 so if deleting or paging update then just restart the query
-    json_res = fetch_items(record_type) 
+    json_res = fetch_items(record_type, row) 
 
     incoming_items = len(json_res.get('data').get(record_type_value).get('edges'))
     print("cursor: " + cursor + " access_token: " + access_token + " incoming_items: " + str(incoming_items))        
-
-       
+      
     if record_type_value in json_res['data']: 
       process_record(record_type, record_type_value, record_mode, json_res)
       page_info = json_res['data'][record_type_value]['pageInfo']
 
     else:
       print("unknown query type")       
+
+  return json_res
 
 def delete_files_in_directory(directory, search_string):
     # Walk through the directory
@@ -157,6 +262,277 @@ def update_record_paging(record_type: RecordType, id_value, access_token):
      return id_value
 
   return None
+
+#####################################################
+#
+# insert_row_client - insert a specific client row
+#
+#####################################################
+def insert_row_client(record_type: RecordType, record_mode: RecordMode, row):
+   
+  login = """
+mutation login {
+
+  login(role:Internal ) {
+    token
+  }
+}
+"""
+
+  token = None
+
+  response = requests.post(url=GRAPHQL_URL, json={"query": login}) 
+
+  if response.status_code == 200:
+    data = response.json()
+    token = data['data']['login']['token']
+  else:
+    raise Exception(f"Login failed: {response.status_code} {response.text}")
+    
+  headers = {
+    'Authorization': f'Bearer {token}'
+  }
+
+  query = "Unknown"
+  with open('C:/repo/seaware-sync/queries/insert_row_' + record_type.name.lower() + '.graphQL', 'r') as file:
+    query = file.read()
+
+  # Id	Name	CustomerID__c	Seaware_Id__c	FirstName	LastName	Email	MiddleName	Title
+  query = query.replace('ALTID_VALUE', row['CustomerID__c'])
+  query = query.replace('FIRSTNAME_VALUE', row['FirstName'])
+  query = query.replace('LASTNAME_VALUE', row['LastName'])
+
+  response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
+  if response.status_code != 200:
+    raise Exception(f"Login failed: {response.status_code} {response.text}")
+    
+  return response
+
+#####################################################
+#
+# update_row_client - update a specific client row
+#
+#####################################################
+def update_row_client(record_type: RecordType, record_mode: RecordMode, row, id_value):
+   
+  login = """
+mutation login {
+
+  login(role:Internal ) {
+    token
+  }
+}
+"""
+
+  token = None
+
+  response = requests.post(url=GRAPHQL_URL, json={"query": login}) 
+
+  if response.status_code == 200:
+    data = response.json()
+    token = data['data']['login']['token']
+  else:
+    raise Exception(f"Login failed: {response.status_code} {response.text}")
+    
+  headers = {
+    'Authorization': f'Bearer {token}'
+  }
+
+  query = "Unknown"
+  with open('C:/repo/seaware-sync/queries/update_row_' + record_type.name.lower() + '.graphQL', 'r') as file:
+    query = file.read()
+
+  # Id	Name	CustomerID__c	Seaware_Id__c	FirstName	LastName	Email	MiddleName	Title
+  query = query.replace('ID_VALUE', id_value)
+  query = query.replace('ALTID_VALUE', row['CustomerID__c'])
+  query = query.replace('FIRSTNAME_VALUE', row['FirstName'])
+  query = query.replace('LASTNAME_VALUE', row['LastName'])
+  query = query.replace('EMAIL_VALUE', row['Email'])
+  query = query.replace('BIRTHDAY_VALUE', row['Birthdate'])
+
+  response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
+  if response.status_code != 200:
+    raise Exception(f"Login failed: {response.status_code} {response.text}")
+  
+  return response
+
+#####################################################
+#
+# insert_row_agent - insert a specific agent row
+#
+#####################################################
+def insert_row_agent(record_type: RecordType, record_mode: RecordMode, row):
+   
+  login = """
+mutation login {
+
+  login(role:Internal ) {
+    token
+  }
+}
+"""
+
+  token = None
+
+  response = requests.post(url=GRAPHQL_URL, json={"query": login}) 
+
+  if response.status_code == 200:
+    data = response.json()
+    token = data['data']['login']['token']
+  else:
+    raise Exception(f"Login failed: {response.status_code} {response.text}")
+    
+  headers = {
+    'Authorization': f'Bearer {token}'
+  }
+
+  query = "Unknown"
+  with open('C:/repo/seaware-sync/queries/insert_row_' + record_type.name.lower() + '.graphQL', 'r') as file:
+    query = file.read()
+
+  # Id	Name	CustomerID__c	Seaware_Id__c	FirstName	LastName	Email	MiddleName	Title
+  query = query.replace('ALTID_VALUE', row['CustomerID__c'])
+  query = query.replace('FIRSTNAME_VALUE', row['FirstName'])
+  query = query.replace('LASTNAME_VALUE', row['LastName'])
+
+  response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
+  if response.status_code != 200:
+    raise Exception(f"Login failed: {response.status_code} {response.text}")
+    
+  return response
+
+#####################################################
+#
+# update_row_agent - update a specific agent row
+#
+#####################################################
+def update_row_agent(record_type: RecordType, record_mode: RecordMode, row, id_value):
+   
+  login = """
+mutation login {
+
+  login(role:Internal ) {
+    token
+  }
+}
+"""
+
+  token = None
+
+  response = requests.post(url=GRAPHQL_URL, json={"query": login}) 
+
+  if response.status_code == 200:
+    data = response.json()
+    token = data['data']['login']['token']
+  else:
+    raise Exception(f"Login failed: {response.status_code} {response.text}")
+    
+  headers = {
+    'Authorization': f'Bearer {token}'
+  }
+
+  query = "Unknown"
+  with open('C:/repo/seaware-sync/queries/update_row_' + record_type.name.lower() + '.graphQL', 'r') as file:
+    query = file.read()
+
+  # Id	Name	CustomerID__c	Seaware_Id__c	FirstName	LastName	Email	MiddleName	Title
+  query = query.replace('ID_VALUE', id_value)
+  query = query.replace('NAME_VALUE', row['Name'])
+
+  response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
+  if response.status_code != 200:
+    raise Exception(f"Login failed: {response.status_code} {response.text}")
+  
+  return response
+
+#####################################################
+#
+# insert_row_agency - insert a specific agency row
+#
+#####################################################
+def insert_row_agency(record_type: RecordType, record_mode: RecordMode, row):
+   
+  login = """
+mutation login {
+
+  login(role:Internal ) {
+    token
+  }
+}
+"""
+
+  token = None
+
+  response = requests.post(url=GRAPHQL_URL, json={"query": login}) 
+
+  if response.status_code == 200:
+    data = response.json()
+    token = data['data']['login']['token']
+  else:
+    raise Exception(f"Login failed: {response.status_code} {response.text}")
+    
+  headers = {
+    'Authorization': f'Bearer {token}'
+  }
+
+  query = "Unknown"
+  with open('C:/repo/seaware-sync/queries/insert_row_' + record_type.name.lower() + '.graphQL', 'r') as file:
+    query = file.read()
+
+  # Id	Name	CustomerID__c	Seaware_Id__c	FirstName	LastName	Email	MiddleName	Title
+  query = query.replace('ALTID_VALUE', row['CustomerID__c'])
+  query = query.replace('NAME_VALUE', row['Name'])
+
+  response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
+  if response.status_code != 200:
+    raise Exception(f"Login failed: {response.status_code} {response.text}")
+    
+  return response
+
+#####################################################
+#
+# update_row_agency - update a specific agency row
+#
+#####################################################
+def update_row_agency(record_type: RecordType, record_mode: RecordMode, row, id_value):
+   
+  login = """
+mutation login {
+
+  login(role:Internal ) {
+    token
+  }
+}
+"""
+
+  token = None
+
+  response = requests.post(url=GRAPHQL_URL, json={"query": login}) 
+
+  if response.status_code == 200:
+    data = response.json()
+    token = data['data']['login']['token']
+  else:
+    raise Exception(f"Login failed: {response.status_code} {response.text}")
+    
+  headers = {
+    'Authorization': f'Bearer {token}'
+  }
+
+  query = "Unknown"
+  with open('C:/repo/seaware-sync/queries/update_row_' + record_type.name.lower() + '.graphQL', 'r') as file:
+    query = file.read()
+
+  # Id	Name	CustomerID__c	Seaware_Id__c	FirstName	LastName	Email	MiddleName	Title
+  query = query.replace('ID_VALUE', id_value)
+  query = query.replace('FIRSTNAME_VALUE', row['FirstName'])
+  query = query.replace('LASTNAME_VALUE', row['LastName'])
+
+  response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
+  if response.status_code != 200:
+    raise Exception(f"Login failed: {response.status_code} {response.text}")
+  
+  return response
 
 #####################################################
 #
@@ -298,7 +674,7 @@ mutation createRecord {
 # fetch_items - responsible for initial page and additional page results based on cursor
 #
 #####################################################
-def fetch_items(record_type: RecordType, cursor = None, access_token = None):
+def fetch_items(record_type: RecordType, row = None, cursor = None, access_token = None):
    
   login = """
 mutation login {
@@ -337,6 +713,9 @@ mutation login {
 
   with open('C:/repo/seaware-sync/queries/get' + input_query + '.graphQL', 'r') as file:
     query = file.read()
+
+  # Columns: Id	Name	CustomerID__c	Seaware_Id__c	FirstName	LastName	Email	MiddleName	Title
+  query = query.replace('ALTID_VALUE', row['CustomerID__c'])
 
   variables = {
     'first': 100  # Number of items to fetch (500 is the max)
@@ -393,9 +772,8 @@ def da_flatten_list(record_type: RecordType, record_mode: RecordMode, json_list,
           should_process_record = False
           if record_type == RecordType.CLIENT:
 
-            should_process_record = ((len(item['node']['classifications']) > 0 and 
-              'SAILED' in item['node']['classifications'][0].get('classification').get('type').get('id')) or 
-              (not item['node']['guestType'] == None and 'REGULAR' in item['node']['guestType']['code']))
+            should_process_record = True
+            
           elif record_type == RecordType.AGENT:
 
             should_process_record = (not item['node']['iatan'] == None and 'holderName' in item['node']['iatan'])
@@ -421,8 +799,8 @@ def da_flatten_list(record_type: RecordType, record_mode: RecordMode, json_list,
 
             elif record_mode == RecordMode.UPDATE:
 
-                should_update_record = (item['node']['isConsortium'] == False and item['node']['type'] != None and item['node']['type']['id'] == 'AgencyType|A')
-                #should_update_record = True
+                #should_update_record = (item['node']['isConsortium'] == False and item['node']['type'] != None and item['node']['type']['id'] == 'AgencyType|A')
+                should_update_record = True
 
                 if should_update_record:
 
@@ -430,6 +808,11 @@ def da_flatten_list(record_type: RecordType, record_mode: RecordMode, json_list,
                     id_value = update_record(record_type, id_value, access_token)
                 else:
                     id_value = None
+
+            elif record_mode == RecordMode.INSERT:
+
+              print('Inserting ' + id_value + ' index: ' + str(index))
+              id_value = insert_record(record_type, id_value, access_token)
 
             else:
                 
@@ -476,6 +859,7 @@ def da_flatten_list_bookings(json_list, key, reservationKey):
           if not item.get('node') == None and not item.get('node').get('guests') == None:
             guests = item.get('node').get('guests')
             da_flatten_list_bookings(guests, RecordType.RESERVATION.name + '_Guests', reservationKey)
+            da_flatten_list_bookings(guests[0]['voyages'], RecordType.RESERVATION.name + '_Voyages', reservationKey)
 
           if not item.get('node') == None and not item.get('node').get('agency') == None:
             agencies = item.get('node').get('agency')

@@ -1,0 +1,15 @@
+mutation updateAgencyRecord {
+  
+  agencyUpdate(
+    input: {
+      id: "Agency|ID_VALUE"
+      agency:{
+        name: "NAME_VALUE"
+        useDefaultConsortium: true        
+      }
+    }) {
+
+    clientMutationId
+    operationResult
+  }
+}

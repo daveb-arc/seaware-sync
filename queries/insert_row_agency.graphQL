@@ -1,0 +1,18 @@
+mutation createAgencyRecord {
+  agencyCreate(
+    input: {
+      agency: {
+        altId: "ALTID_VALUE"
+        name: "NAME_VALUE"
+        useDefaultConsortium: true
+      }
+    }) {
+    
+    result {
+      id
+      key
+    }
+    clientMutationId
+    operationResult
+  }
+}

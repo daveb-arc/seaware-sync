@@ -4,7 +4,11 @@ mutation updateRecord {
     input: {
       id: "ID_VALUE"
       client:{
-        verifiedEmail: null
+        altId: "altId_TOKEN"
+        firstName: "firstName_TOKEN"
+        lastName: "lastName_TOKEN"
+        birthday: "birthday_TOKEN"
+        eMail: "eMail_TOKEN"
       }
     }) {
     
