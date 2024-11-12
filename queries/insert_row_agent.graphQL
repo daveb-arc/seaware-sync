@@ -6,6 +6,9 @@ mutation createTravelAgentRecord {
         altId: "ALTID_VALUE"
         firstName: "FIRSTNAME_VALUE"
         lastName: "LASTNAME_VALUE"
+        password: "nopassword"
+        allowWebAccess: false
+        canAccessAgencyData: false
       }
     }) {
     

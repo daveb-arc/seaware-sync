@@ -7,11 +7,13 @@ query getAgents(
          # the cursor from the previous page of search results
         after: $after
         params: {
+          altId: "ALTID_VALUE"
         }) {
         edges {
             node {
               id
               key
+              altId
               firstName
               lastName    
               comments

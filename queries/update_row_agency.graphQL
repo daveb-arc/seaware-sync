@@ -2,10 +2,14 @@ mutation updateAgencyRecord {
   
   agencyUpdate(
     input: {
-      id: "Agency|ID_VALUE"
+      id: "Agency|AGENCYID_VALUE"
       agency:{
-        name: "NAME_VALUE"
+        name: "AGENCYNAME_VALUE"
         useDefaultConsortium: true        
+        typeId: "AgencyType|AGENGYTYPE_VALUE"
+        consortiumType: "CONSORTIUMTYPE_VALUE"
+        isConsortium: ISCONORTIUM_VALUE
+        iata: "IATA_VALUE"
       }
     }) {
 

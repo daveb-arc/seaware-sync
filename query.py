@@ -91,22 +91,20 @@ def process_salesforce_clients(record_type: RecordType, record_mode: RecordMode)
   for index, row in data_frame.iterrows():
 
       # Query to setup output file for processing in Excel PowerQuery update to SF
-      json_res = process_seaware(RecordType.CLIENT, RecordMode.QUERY, row)
+      json_res = process_seaware(record_type, RecordMode.QUERY, row)
 
       if len(json_res.get('data').get('clients').get('edges')) <= 0:
 
         # Attempt to insert - Seaware DB will fail call if altid already set on a record
-        insert_row_client(RecordType.CLIENT, RecordMode.INSERT, row)
+        insert_row_client(record_type, RecordMode.INSERT, row)
 
         # Query to setup output file for processing in Excel PowerQuery update to SF
-        process_seaware(RecordType.CLIENT, RecordMode.QUERY, row)
+        json_res = process_seaware(record_type, RecordMode.QUERY, row)
 
-      else:
+      id_value = json_res.get('data').get('clients').get('edges')[0].get('node').get('key')
 
-        id_value = json_res.get('data').get('clients').get('edges')[0].get('node').get('key')
-
-        # Update Request for complete field updates
-        update_row_client(RecordType.CLIENT, RecordMode.UPDATE, row, id_value)
+      # Update Request for complete field updates
+      update_row_client(record_type, RecordMode.UPDATE, row, id_value)
 
 def process_salesforce_agents(record_type: RecordType, record_mode: RecordMode):
     
@@ -117,22 +115,20 @@ def process_salesforce_agents(record_type: RecordType, record_mode: RecordMode):
   for index, row in data_frame.iterrows():
 
       # Query to setup output file for processing in Excel PowerQuery update to SF
-      json_res = process_seaware(RecordType.AGENT, RecordMode.QUERY, row)
+      json_res = process_seaware(record_type, RecordMode.QUERY, row)
 
       if len(json_res.get('data').get('travelAgents').get('edges')) <= 0:
 
         # Attempt to insert - Seaware DB will fail call if altid already set on a record
-        insert_row_agent(RecordType.AGENT, RecordMode.INSERT, row)
+        insert_row_agent(record_type, RecordMode.INSERT, row)
 
         # Query to setup output file for processing in Excel PowerQuery update to SF
-        process_seaware(RecordType.AGENT, RecordMode.QUERY, row)
+        json_res = process_seaware(record_type, RecordMode.QUERY, row)
 
-      else:
+      id_value = json_res.get('data').get('travelAgents').get('edges')[0].get('node').get('key')
 
-        id_value = json_res.get('data').get('agents').get('edges')[0].get('node').get('key')
-
-        # Update Request for complete field updates
-        update_row_agent(RecordType.CLIENT, RecordMode.UPDATE, row, id_value)
+      # Update Request for complete field updates
+      update_row_agent(record_type, RecordMode.UPDATE, row, id_value)
 
 def process_salesforce_agencies(record_type: RecordType, record_mode: RecordMode):
     
@@ -143,22 +139,20 @@ def process_salesforce_agencies(record_type: RecordType, record_mode: RecordMode
   for index, row in data_frame.iterrows():
 
       # Query to setup output file for processing in Excel PowerQuery update to SF
-      json_res = process_seaware(RecordType.AGENCY, RecordMode.QUERY, row)
+      json_res = process_seaware(record_type, RecordMode.QUERY, row)
 
       if len(json_res.get('data').get('agencies').get('edges')) <= 0:
 
         # Attempt to insert - Seaware DB will fail call if altid already set on a record
-        insert_row_agency(RecordType.AGENCY, RecordMode.INSERT, row)
+        insert_row_agency(record_type, RecordMode.INSERT, row)
 
         # Query to setup output file for processing in Excel PowerQuery update to SF
-        process_seaware(RecordType.AGENCY, RecordMode.QUERY, row)
+        json_res = process_seaware(record_type, RecordMode.QUERY, row)
 
-      else:
+      id_value = json_res.get('data').get('agencies').get('edges')[0].get('node').get('key')
 
-        id_value = json_res.get('data').get('agencies').get('edges')[0].get('node').get('key')
-
-        # Update Request for complete field updates
-        update_row_agency(RecordType.AGENCY, RecordMode.UPDATE, row, id_value)
+      # Update Request for complete field updates
+      update_row_agency(record_type, RecordMode.UPDATE, row, id_value)
 
 def process_seaware(record_type: RecordType, record_mode: RecordMode, row = None): 
 
@@ -299,7 +293,12 @@ mutation login {
 
   # Id	Name	CustomerID__c	Seaware_Id__c	FirstName	LastName	Email	MiddleName	Title
   query = query.replace('ALTID_VALUE', row['CustomerID__c'])
-  query = query.replace('FIRSTNAME_VALUE', row['FirstName'])
+
+  safeValue = ''
+  if not pd.isna(row['FirstName']) and not str(row['FirstName']).strip() == "":
+    safeValue = row['FirstName']
+  
+  query = query.replace('FIRSTNAME_VALUE', safeValue)
   query = query.replace('LASTNAME_VALUE', row['LastName'])
 
   response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
@@ -345,10 +344,25 @@ mutation login {
   # Id	Name	CustomerID__c	Seaware_Id__c	FirstName	LastName	Email	MiddleName	Title
   query = query.replace('ID_VALUE', id_value)
   query = query.replace('ALTID_VALUE', row['CustomerID__c'])
-  query = query.replace('FIRSTNAME_VALUE', row['FirstName'])
+
+  safeValue = ''
+  if not pd.isna(row['FirstName']) and not str(row['FirstName']).strip() == "":
+    safeValue = row['FirstName']
+
+  query = query.replace('FIRSTNAME_VALUE', safeValue)
   query = query.replace('LASTNAME_VALUE', row['LastName'])
-  query = query.replace('EMAIL_VALUE', row['Email'])
-  query = query.replace('BIRTHDAY_VALUE', row['Birthdate'])
+
+  safeValue = ''
+  if not pd.isna(row['Email']) and not str(row['Email']).strip() == "":
+    safeValue = row['Email']
+
+  query = query.replace('EMAIL_VALUE', safeValue)
+
+  safeValue = ''
+  if not pd.isna(row['Birthdate']) and not str(row['Birthdate']).strip() == "":
+    safeValue = row['Birthdate']
+
+  query = query.replace('BIRTHDAY_VALUE', safeValue)
 
   response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
   if response.status_code != 200:
@@ -390,9 +404,14 @@ mutation login {
   with open('C:/repo/seaware-sync/queries/insert_row_' + record_type.name.lower() + '.graphQL', 'r') as file:
     query = file.read()
 
-  # Id	Name	CustomerID__c	Seaware_Id__c	FirstName	LastName	Email	MiddleName	Title
-  query = query.replace('ALTID_VALUE', row['CustomerID__c'])
-  query = query.replace('FIRSTNAME_VALUE', row['FirstName'])
+  # Columns: Id	Name	FirstName	LastName	Email	RepresentativeID__c
+  query = query.replace('ALTID_VALUE', row['RepresentativeID__c'])
+
+  safeValue = ''
+  if not pd.isna(row['FirstName']) and not str(row['FirstName']).strip() == "":
+    safeValue = row['FirstName']
+
+  query = query.replace('FIRSTNAME_VALUE', safeValue)
   query = query.replace('LASTNAME_VALUE', row['LastName'])
 
   response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
@@ -435,9 +454,21 @@ mutation login {
   with open('C:/repo/seaware-sync/queries/update_row_' + record_type.name.lower() + '.graphQL', 'r') as file:
     query = file.read()
 
-  # Id	Name	CustomerID__c	Seaware_Id__c	FirstName	LastName	Email	MiddleName	Title
-  query = query.replace('ID_VALUE', id_value)
-  query = query.replace('NAME_VALUE', row['Name'])
+  # Columns: Id	Name	FirstName	LastName	Email	RepresentativeID__c
+  query = query.replace('AGENTID_VALUE', id_value)
+
+  safeValue = ''
+  if not pd.isna(row['FirstName']) and not str(row['FirstName']).strip() == "":
+    safeValue = row['FirstName']
+
+  query = query.replace('FIRSTNAME_VALUE', safeValue)
+  query = query.replace('LASTNAME_VALUE', row['FirstName'])
+
+  safeValue = ''
+  if not pd.isna(row['Email']) and not str(row['Email']).strip() == "":
+    safeValue = row['Email']
+
+  query = query.replace('EMAIL_VALUE', safeValue)
 
   response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
   if response.status_code != 200:
@@ -523,11 +554,26 @@ mutation login {
   with open('C:/repo/seaware-sync/queries/update_row_' + record_type.name.lower() + '.graphQL', 'r') as file:
     query = file.read()
 
-  # Id	Name	CustomerID__c	Seaware_Id__c	FirstName	LastName	Email	MiddleName	Title
-  query = query.replace('ID_VALUE', id_value)
-  query = query.replace('FIRSTNAME_VALUE', row['FirstName'])
-  query = query.replace('LASTNAME_VALUE', row['LastName'])
+  # Columns: Id	Name	AgencyID__c	Seaware_Id__c	AgencyType__c	Consortium__c	Consortium_Start_Date__c	Consortium_End_Date__c	IATA_Number__c
+  query = query.replace('AGENCYID_VALUE', id_value)
+  query = query.replace('AGENCYNAME_VALUE', row['Name'])
+  query = query.replace('AGENGYTYPE_VALUE', row['AgencyType__c'])
 
+  consortium = ''
+  is_consortium = 'false'
+  if not pd.isna(row['Consortium__c']) and not str(row['Consortium__c']).strip() == "":
+    is_consortium = 'true'
+    consortium = row['Consortium__c']
+
+  query = query.replace('CONSORTIUMTYPE_VALUE', consortium)
+  query = query.replace('ISCONORTIUM_VALUE', is_consortium)
+
+  iata = ''
+  if not pd.isna(row['IATA_Number__c']) and not str(row['IATA_Number__c']).strip() == "":
+     iata = row['IATA_Number__c']
+
+  query = query.replace('IATA_VALUE', iata)
+  
   response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
   if response.status_code != 200:
     raise Exception(f"Login failed: {response.status_code} {response.text}")
@@ -728,7 +774,7 @@ mutation login {
   elif record_type == RecordType.AGENT:
      
     # Columns: Id	Name	FirstName	LastName	Email	RepresentativeID__c
-    query = query.replace('ALTID_VALUE', row['ReprsentativeID__c'])
+    query = query.replace('ALTID_VALUE', row['RepresentativeID__c'])
 
   elif record_type == RecordType.AGENCY:
     

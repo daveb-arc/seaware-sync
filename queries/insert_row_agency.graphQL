@@ -5,6 +5,15 @@ mutation createAgencyRecord {
         altId: "ALTID_VALUE"
         name: "NAME_VALUE"
         useDefaultConsortium: true
+        office: {
+          key: "MAIN"
+        }
+        defaultCurrency: {
+          key: "USD"
+        }
+        defaultLanguage: {
+          key: "ENG"
+        }
       }
     }) {
     
