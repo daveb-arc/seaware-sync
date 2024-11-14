@@ -248,6 +248,19 @@ fragment ReservationFragment on Reservation {
 
         #guest voyages
         voyages {
+            pkg {
+                typeName
+                key
+                id
+                sailDays
+                destinations {
+                    name
+                }
+                type {
+                    code
+                    name
+                }
+            }
 
             category {
                 ship {

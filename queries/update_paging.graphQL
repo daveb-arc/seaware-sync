@@ -2,7 +2,7 @@ mutation updateRecord {
 
   RECORD_TYPEUpdate(
     input: {
-      id: "ID_VALUE"
+      id: "RECORDID_VALUE"
       RECORD_TYPE:{
         isInternal: false
       }

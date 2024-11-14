@@ -2,13 +2,26 @@ mutation updateRecord {
 
   clientUpdate(
     input: {
-      id: "Client|ID_VALUE"
+      id: "Client|CLIENTID_VALUE"
       client:{
         altId: "ALTID_VALUE"
         firstName: "FIRSTNAME_VALUE"
         lastName: "LASTNAME_VALUE"
         eMail: "EMAIL_VALUE"
         birthday: "BIRTHDAY_VALUE"
+        gender: GENDER_VALUE
+        guestType: {
+          key: "GUESTTYPE_VALUE"
+        }
+        classifications:{
+          dateRange: {
+            from: "2024-01-01"
+            to: "2099-01-01"
+          }
+          classification:{
+            key:"SAILED,SAILED_VALUE"
+          }
+        }
       }
     }) {
     

@@ -45,8 +45,8 @@ def main():
           .format(record_type_input, record_mode_input, sys.argv))
 
   # Delete previous csv files
-  directory_to_search = "C:/repo/seaware-sync/output_csv"
-  delete_files_in_directory(directory_to_search, '.csv')
+  #directory_to_search = "C:/repo/seaware-sync/output_csv"
+  #delete_files_in_directory(directory_to_search, '.csv')
 
   record_type = RecordType.RESERVATION
   if record_type_input == RecordType.AGENCY.name:
@@ -175,7 +175,7 @@ def process_seaware(record_type: RecordType, record_mode: RecordMode, row = None
     record_type_value = 'agencies'
 
   # Initial request - no cursor
-  json_res = fetch_items(record_type, row)
+  json_res = fetch_items(record_type, record_mode, row)
   page_info = None
 
   if record_type_value in json_res['data']: 
@@ -192,10 +192,10 @@ def process_seaware(record_type: RecordType, record_mode: RecordMode, row = None
     
     cursor = page_info['endCursor']
     access_token = json_res['extensions']['access_token']
-#    json_res = fetch_items(record_type, row, cursor, access_token) 
+#    json_res = fetch_items(record_type, record_mode, row, cursor, access_token) 
 
     # Max query is 500 so if deleting or paging update then just restart the query
-    json_res = fetch_items(record_type, row) 
+    json_res = fetch_items(record_type, record_mode, row) 
 
     incoming_items = len(json_res.get('data').get(record_type_value).get('edges'))
     print("cursor: " + cursor + " access_token: " + access_token + " incoming_items: " + str(incoming_items))        
@@ -235,7 +235,7 @@ def update_record_paging(record_type: RecordType, id_value, access_token):
   with open('C:/repo/seaware-sync/queries/update_paging.graphQL', 'r') as file:
     query = file.read()
 
-  query = query.replace('ID_VALUE', id_value)
+  query = query.replace('RECORDID_VALUE', id_value)
 
   # Record Types
   record_type_value = 'reservation'
@@ -351,7 +351,7 @@ mutation login {
     query = file.read()
 
   # Id	Name	CustomerID__c	Seaware_Id__c	FirstName	LastName	Email	MiddleName	Title
-  query = query.replace('ID_VALUE', id_value)
+  query = query.replace('CLIENTID_VALUE', id_value)
   query = query.replace('ALTID_VALUE', row['CustomerID__c'])
 
   safeValue = ''
@@ -372,6 +372,25 @@ mutation login {
     safeValue = row['Birthdate']
 
   query = query.replace('BIRTHDAY_VALUE', safeValue)
+
+  safeValue = ''
+  if not pd.isna(row['Gender__c']) and not str(row['Gender__c']).strip() == "":
+    safeValue = row['Gender__c'][0]
+    
+  query = query.replace('GENDER_VALUE', safeValue)
+
+  safeValue = '0'
+  if not pd.isna(row['No_of_Bookings__c']) and not str(row['No_of_Bookings__c']).strip() == "":
+    safeValue = round(row['No_of_Bookings__c'])
+
+  query = query.replace('SAILED_VALUE', str(safeValue))
+
+  safeValue = 'REGULAR'
+  # Need to exactly map the Salesforce Passenger Type values to the Guest Type values in Seaware
+  #if not pd.isna(row['Passenger_Type__c']) and not str(row['Passenger_Type__c']).strip() == "":
+  #  safeValue = round(row['Passenger_Type__c'])
+
+  query = query.replace('GUESTTYPE_VALUE', str(safeValue))
 
   response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
   if response.status_code != 200:
@@ -435,7 +454,11 @@ mutation login {
 #
 #####################################################
 def update_row_agent(record_type: RecordType, record_mode: RecordMode, row, id_value):
-   
+
+  # Check to ignore the UnCruise Agency 
+  if 'UnCruise' in row['Account.Name']:
+    return
+
   login = """
 mutation login {
 
@@ -541,7 +564,11 @@ mutation login {
 #
 #####################################################
 def update_row_agency(record_type: RecordType, record_mode: RecordMode, row, id_value):
-   
+
+  # Check to ignore the UnCruise Agency 
+  if 'UnCruise' in row['Account.Name']:
+    return
+
   login = """
 mutation login {
 
@@ -571,7 +598,7 @@ mutation login {
 
   # Columns: Id	Name	AgencyID__c	Seaware_Id__c	AgencyType__c	Consortium__c	Consortium_Start_Date__c	Consortium_End_Date__c	IATA_Number__c
   query = query.replace('AGENCYID_VALUE', id_value)
-  query = query.replace('AGENCYNAME_VALUE', row['Account.Name'])
+  query = query.replace('AGENCYNAME_VALUE', row['Account.Name'])  
   query = query.replace('AGENGYTYPE_VALUE', row['Account.AgencyType__c'])
 
   consortium = ''
@@ -606,7 +633,7 @@ def update_record(record_type: RecordType, id_value, access_token):
   with open('C:/repo/seaware-sync/queries/update_' + record_type.name.lower() + '.graphQL', 'r') as file:
     query = file.read()
 
-  query = query.replace('ID_VALUE', id_value)
+  query = query.replace('RECORDID_VALUE', id_value)
 
   headers = {
     'Authorization': f'Bearer {access_token}'
@@ -638,7 +665,7 @@ mutation deleteRecord {
 
   RECORD_TYPE(
     input: {
-      id: "ID_VALUE"
+      id: "RECORDID_VALUE"
     }) {
     
     clientMutationId
@@ -647,7 +674,7 @@ mutation deleteRecord {
 }
 """
 
-  graphql_query = graphql_query.replace('ID_VALUE', id_value)
+  graphql_query = graphql_query.replace('RECORDID_VALUE', id_value)
 
   # Record Types - agencyRemove, travelAgentRemove, clientRemove
   record_type_value = 'Unknown'
@@ -690,7 +717,7 @@ mutation createRecord {
 
   RECORD_TYPE(
     input: {
-      id: "ID_VALUE"
+      id: "RECORDID_VALUE"
     }) {
     
     clientMutationId
@@ -699,7 +726,7 @@ mutation createRecord {
 }
 """
 
-  graphql_query = graphql_query.replace('ID_VALUE', id_value)
+  graphql_query = graphql_query.replace('RECORDID_VALUE', id_value)
 
   # Record Types - agencyRemove, travelAgentRemove, clientRemove
   record_type_value = 'Unknown'
@@ -735,7 +762,7 @@ mutation createRecord {
 # fetch_items - responsible for initial page and additional page results based on cursor
 #
 #####################################################
-def fetch_items(record_type: RecordType, row = None, cursor = None, access_token = None):
+def fetch_items(record_type: RecordType, record_mode: RecordMode, row = None, cursor = None, access_token = None):
    
   login = """
 mutation login {
@@ -781,20 +808,29 @@ mutation login {
   with open('C:/repo/seaware-sync/queries/get' + input_query + '.graphQL', 'r') as file:
     query = file.read()
 
-  if record_type == RecordType.CLIENT:
-     
-    # Columns: Id	Name	CustomerID__c	Seaware_Id__c	FirstName	LastName	Email	MiddleName	Title
-    query = query.replace('ALTID_VALUE', row['CustomerID__c'])
+  # Check for UPDATE query then update params - UPDATE is a utility tool for setting a value(s) on multiple records
+  if record_mode == RecordMode.UPDATE:
 
-  elif record_type == RecordType.AGENT:
-     
-    # Columns: Id	Name	FirstName	LastName	Email	RepresentativeID__c
-    query = query.replace('ALTID_VALUE', row['RepresentativeID__c'])
+    query = query.replace('altId: "ALTID_VALUE"', 'isInternal: true')
+  else:
 
-  elif record_type == RecordType.AGENCY:
-    
-    # Columns: Id	Name	AgencyID__c	Seaware_Id__c
-    query = query.replace('ALTID_VALUE', row['Account.AgencyID__c'])
+    if record_type == RecordType.CLIENT:
+      
+      if row is not None:
+        # Columns: Id	Name	CustomerID__c	Seaware_Id__c	FirstName	LastName	Email	MiddleName	Title
+        query = query.replace('ALTID_VALUE', row['CustomerID__c'])
+
+    elif record_type == RecordType.AGENT:
+      
+      if row is not None:
+        # Columns: Id	Name	FirstName	LastName	Email	RepresentativeID__c
+        query = query.replace('ALTID_VALUE', row['RepresentativeID__c'])
+
+    elif record_type == RecordType.AGENCY:
+      
+      if row is not None:
+        # Columns: Id	Name	AgencyID__c	Seaware_Id__c
+        query = query.replace('ALTID_VALUE', row['Account.AgencyID__c'])
 
   variables = {
     'first': 100  # Number of items to fetch (500 is the max)
@@ -891,7 +927,7 @@ def da_flatten_list(record_type: RecordType, record_mode: RecordMode, json_list,
             elif record_mode == RecordMode.INSERT:
 
               print('Inserting ' + id_value + ' index: ' + str(index))
-              id_value = insert_record(record_type, id_value, access_token)
+              #id_value = insert_record(record_type, id_value, access_token)
 
             else:
                 
@@ -917,35 +953,55 @@ def da_flatten_list_bookings(json_list, key, reservationKey):
 
   # Create a list of dictionaries for CSV writing
   csv_data = []
-  for index, item in enumerate(json_list):
+
+  if isinstance(json_list, dict):
       
-      if isinstance(item, dict):
-          
-          flattened_items = flatten_json_lists(item)
+      #name = json_list.get('name')
 
-          if next(iter(flattened_items.values())) == None:
-              continue
-          
-          if next(iter(flattened_items.keys())) == 'node_key':
-            reservationKey = next(iter(flattened_items.values()))
+      flattened_items = flatten_json_lists(json_list)
+      custom_items = {'reservation': reservationKey}
+      flattened_item = {**custom_items, **flattened_items}
 
-          custom_items = {'index': index, 'reservation': reservationKey}
+      csv_data.append(flattened_item)
 
-          flattened_item = {**custom_items, **flattened_items}
+  else:
 
-          csv_data.append(flattened_item)
+    for index, item in enumerate(json_list):
+        
+        if isinstance(item, dict):
+            
+            flattened_items = flatten_json_lists(item)
 
-          if not item.get('node') == None and not item.get('node').get('guests') == None:
-            guests = item.get('node').get('guests')
-            da_flatten_list_bookings(guests, RecordType.RESERVATION.name + '_Guests', reservationKey)
-            da_flatten_list_bookings(guests[0]['voyages'], RecordType.RESERVATION.name + '_Voyages', reservationKey)
+            if next(iter(flattened_items.values())) == None:
+                continue
+            
+            if next(iter(flattened_items.keys())) == 'node_key':
+              reservationKey = next(iter(flattened_items.values()))
 
-          if not item.get('node') == None and not item.get('node').get('agency') == None:
-            agencies = item.get('node').get('agency')
-            da_flatten_list_bookings(agencies, RecordType.RESERVATION.name + '_Agencies', reservationKey)
+            custom_items = {'index': index, 'reservation': reservationKey}
 
-      else:
-          print(f"Skipping non-dict item in list '{key}': {item}")
+            flattened_item = {**custom_items, **flattened_items}
+
+            csv_data.append(flattened_item)
+
+            if not item.get('node') == None and not item.get('node').get('guests') == None:
+              guests = item.get('node').get('guests')
+              da_flatten_list_bookings(guests, RecordType.RESERVATION.name + '_Guests', reservationKey)
+              da_flatten_list_bookings(guests[0]['voyages'], RecordType.RESERVATION.name + '_Voyages', reservationKey)
+
+              if len(guests[0]['voyages']) > 0:
+                da_flatten_list_bookings(guests[0]['voyages'][0]['pkg'], RecordType.RESERVATION.name + '_VoyagePackages', reservationKey)
+
+            if not item.get('node') == None and not item.get('node').get('agency') == None:
+              agencies = item.get('node').get('agency')
+              da_flatten_list_bookings(agencies, RecordType.RESERVATION.name + '_Agencies', reservationKey)
+
+            if not item.get('node') == None and not item.get('node').get('contact') == None:
+              contact = item.get('node').get('contact')
+              da_flatten_list_bookings(contact, RecordType.RESERVATION.name + '_Contact', reservationKey)
+
+        else:
+            print(f"Skipping non-dict item in list '{key}': {item}")
 
   # Write to CSV file named after the key
   write_to_csv(csv_data, f"{key}.csv")

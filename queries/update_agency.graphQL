@@ -2,9 +2,10 @@ mutation updateRecord {
 
   agencyUpdate(
     input: {
-      id: "ID_VALUE"
+      id: "RECORDID_VALUE"
       agency:{
         useDefaultConsortium: true
+        isInternal: false
       }
     }) {
     

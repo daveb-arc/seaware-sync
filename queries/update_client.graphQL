@@ -2,13 +2,13 @@ mutation updateRecord {
 
   clientUpdate(
     input: {
-      id: "ID_VALUE"
+      id: "RECORDID_VALUE"
       client:{
-        altId: "altId_TOKEN"
-        firstName: "firstName_TOKEN"
-        lastName: "lastName_TOKEN"
-        birthday: "birthday_TOKEN"
-        eMail: "eMail_TOKEN"
+        altId: "ALTID_VALUE"
+        firstName: "FIRSTNAME_VALUE"
+        lastName: "LASTNAME_VALUE"
+        birthday: "BIRTHDAY_VALUE"
+        eMail: "EMAIL_VALUE"
       }
     }) {
     

@@ -10,3 +10,4 @@ key.txt
 *.csv
 ~*
 *.zip
+*.log

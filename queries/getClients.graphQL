@@ -19,6 +19,7 @@ query getClients(
               middleName
               eMail
               birthday
+              gender
               #Client photo as Base64 encoded string
               checkInPhoto
               checkInPhotoType
