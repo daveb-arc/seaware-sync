@@ -1,0 +1,100 @@
+query getClients(
+    	$first: Int!
+      $after: String) {
+    clients(
+         # number of records to return
+        first: $first
+         # the cursor from the previous page of search results
+        after: $after
+        params: {
+          firstName: "FIRSTNAME_VALUE"
+          lastName: "LASTNAME_VALUE"
+          birthday: "BIRTHDAY_VALUE"
+        }) {
+        edges {
+            node {
+              id
+              key
+              altId
+              firstName
+              lastName
+              middleName
+              eMail
+              birthday
+              gender
+              #Client photo as Base64 encoded string
+              checkInPhoto
+              checkInPhotoType
+              #Passport information
+              title {
+                  id
+                  key
+                  sex
+              }
+              passport {
+                  number
+                  issuedBy
+                  issuedOn
+                  expirationDate
+              }
+              borderForms {
+                  reservation {
+                      id
+                  }
+                  documentInfo {
+                      number
+                      type
+                      issuedCountry {
+                          name
+                      }
+                      issuedCity
+                      issuedDate
+                      expirationDate
+                  }
+                  visa {
+                      number
+                      issuedCountry {
+                          key
+                      }
+                      issuedCity
+                  }
+              }
+              preferences {
+                  type {
+                      key
+                  }
+                  code {
+                      name key
+                  }
+                  comments
+              }
+              programs {
+                  program {
+                      id
+                      key
+                      name
+                  }
+                  activeDateRange {
+                      from
+                      to
+                  }
+                  comments
+                  externalAccountNumber
+                  accountData {
+                      ownerClient {
+                          firstName
+                          lastName
+                      }
+                  }
+              }
+            }
+            cursor
+        }
+        pageInfo {
+          hasPreviousPage
+          hasNextPage
+          startCursor
+          endCursor  
+        }
+    }
+}

@@ -44,10 +44,6 @@ def main():
           "RecordType: {} RecordMode: {} sys.argv {}\n"
           .format(record_type_input, record_mode_input, sys.argv))
 
-  # Delete previous csv files
-  #directory_to_search = "C:/repo/seaware-sync/output_csv"
-  #delete_files_in_directory(directory_to_search, '.csv')
-
   record_type = RecordType.RESERVATION
   if record_type_input == RecordType.AGENCY.name:
      record_type = RecordType.AGENCY
@@ -82,7 +78,14 @@ def main():
 
     process_seaware(record_type, record_mode)
 
-def process_salesforce_clients(record_type: RecordType, record_mode: RecordMode):
+  exit
+
+#####################################################
+#
+# process_salesforce_clients - 
+#
+#####################################################
+def process_salesforce_clients(record_type, record_mode):
     
   import pandas as pd
 
@@ -96,6 +99,13 @@ def process_salesforce_clients(record_type: RecordType, record_mode: RecordMode)
       # Query to setup output file for processing in Excel PowerQuery update to SF
       json_res = process_seaware(record_type, RecordMode.QUERY, row)
 
+      # Check if record found in Seaware by Customer ID
+      if len(json_res.get('data').get('clients').get('edges')) <= 0:
+
+        # Check if record found in Seaware by Lookup - FirstName, LastName, DOB
+        json_res = process_seaware_bylookup(record_type, RecordMode.QUERY, row)
+
+      # Check if record found in Seaware by Customer ID or Lookup
       if len(json_res.get('data').get('clients').get('edges')) <= 0:
 
         # Attempt to insert - Seaware DB will fail call if altid already set on a record
@@ -109,7 +119,7 @@ def process_salesforce_clients(record_type: RecordType, record_mode: RecordMode)
       # Update Request for complete field updates
       update_row_client(record_type, RecordMode.UPDATE, row, id_value)
 
-def process_salesforce_agents(record_type: RecordType, record_mode: RecordMode):
+def process_salesforce_agents(record_type, record_mode):
     
   import pandas as pd
 
@@ -136,7 +146,7 @@ def process_salesforce_agents(record_type: RecordType, record_mode: RecordMode):
       # Update Request for complete field updates
       update_row_agent(record_type, RecordMode.UPDATE, row, id_value)
 
-def process_salesforce_agencies(record_type: RecordType, record_mode: RecordMode):
+def process_salesforce_agencies(record_type, record_mode):
     
   import pandas as pd
 
@@ -163,7 +173,7 @@ def process_salesforce_agencies(record_type: RecordType, record_mode: RecordMode
       # Update Request for complete field updates
       update_row_agency(record_type, RecordMode.UPDATE, row, id_value)
 
-def process_seaware(record_type: RecordType, record_mode: RecordMode, row = None): 
+def process_seaware(record_type, record_mode, row = None): 
 
   # Record Types
   record_type_value = 'reservations'
@@ -192,10 +202,10 @@ def process_seaware(record_type: RecordType, record_mode: RecordMode, row = None
     
     cursor = page_info['endCursor']
     access_token = json_res['extensions']['access_token']
-#    json_res = fetch_items(record_type, record_mode, row, cursor, access_token) 
+    json_res = fetch_items(record_type, record_mode, row, cursor, access_token) 
 
     # Max query is 500 so if deleting or paging update then just restart the query
-    json_res = fetch_items(record_type, record_mode, row) 
+    #json_res = fetch_items(record_type, record_mode, row) 
 
     incoming_items = len(json_res.get('data').get(record_type_value).get('edges'))
     print("cursor: " + cursor + " access_token: " + access_token + " incoming_items: " + str(incoming_items))        
@@ -209,19 +219,51 @@ def process_seaware(record_type: RecordType, record_mode: RecordMode, row = None
 
   return json_res
 
-def delete_files_in_directory(directory, search_string):
-    # Walk through the directory
-    for foldername, subfolders, filenames in os.walk(directory):
-        for filename in filenames:
-            # Check if the search string is in the filename
-            if search_string in filename:
-                file_path = os.path.join(foldername, filename)
-                try:
-                    # Delete the file
-                    os.remove(file_path)
-                    print(f"Deleted: {file_path}")
-                except Exception as e:
-                    print(f"Error deleting {file_path}: {e}")
+def process_seaware_bylookup(record_type, record_mode, row = None): 
+
+  # Record Types
+  record_type_value = 'reservations'
+  if record_type == RecordType.CLIENT:
+    record_type_value = 'clients'
+  elif record_type == RecordType.AGENT:
+    record_type_value = 'travelAgents'
+  elif record_type == RecordType.AGENCY:
+    record_type_value = 'agencies'
+
+  # Initial request - no cursor
+  json_res = fetch_items_bylookup(record_type, record_mode, row)
+  page_info = None
+
+  if record_type_value in json_res['data']: 
+    process_record(record_type, record_type_value, record_mode, json_res)
+    page_info = json_res['data'][record_type_value]['pageInfo']
+
+  else:
+    print("unknown response type")
+    return json_res
+
+  # Check for next page - max query is total of 500 regardless of the paging request size
+  #
+  while page_info['hasNextPage']:
+    
+    cursor = page_info['endCursor']
+    access_token = json_res['extensions']['access_token']
+    json_res = fetch_items_bylookup(record_type, record_mode, row, cursor, access_token) 
+
+    # Max query is 500 so if deleting or paging update then just restart the query
+    #json_res = fetch_items(record_type, record_mode, row) 
+
+    incoming_items = len(json_res.get('data').get(record_type_value).get('edges'))
+    print("cursor: " + cursor + " access_token: " + access_token + " incoming_items: " + str(incoming_items))        
+      
+    if record_type_value in json_res['data']: 
+      process_record(record_type, record_type_value, record_mode, json_res)
+      page_info = json_res['data'][record_type_value]['pageInfo']
+
+    else:
+      print("unknown query type")       
+
+  return json_res
 
 #####################################################
 #
@@ -229,7 +271,7 @@ def delete_files_in_directory(directory, search_string):
 #   used as the workaround flag for paging
 #
 #####################################################
-def update_record_paging(record_type: RecordType, id_value, access_token):
+def update_record_paging(record_type, id_value, access_token):
    
   query = "Unknown"
   with open('C:/repo/seaware-sync/queries/update_paging.graphQL', 'r') as file:
@@ -271,7 +313,7 @@ def update_record_paging(record_type: RecordType, id_value, access_token):
 # insert_row_client - insert a specific client row
 #
 #####################################################
-def insert_row_client(record_type: RecordType, record_mode: RecordMode, row):
+def insert_row_client(record_type, record_mode, row):
    
   login = """
 mutation login {
@@ -321,7 +363,7 @@ mutation login {
 # update_row_client - update a specific client row
 #
 #####################################################
-def update_row_client(record_type: RecordType, record_mode: RecordMode, row, id_value):
+def update_row_client(record_type, record_mode, row, id_value):
    
   login = """
 mutation login {
@@ -403,7 +445,7 @@ mutation login {
 # insert_row_agent - insert a specific agent row
 #
 #####################################################
-def insert_row_agent(record_type: RecordType, record_mode: RecordMode, row):
+def insert_row_agent(record_type, record_mode, row):
    
   login = """
 mutation login {
@@ -453,7 +495,7 @@ mutation login {
 # update_row_agent - update a specific agent row
 #
 #####################################################
-def update_row_agent(record_type: RecordType, record_mode: RecordMode, row, id_value):
+def update_row_agent(record_type, record_mode, row, id_value):
 
   # Check to ignore the UnCruise Agency 
   if 'UnCruise' in row['Account.Name']:
@@ -519,7 +561,7 @@ mutation login {
 # insert_row_agency - insert a specific agency row
 #
 #####################################################
-def insert_row_agency(record_type: RecordType, record_mode: RecordMode, row):
+def insert_row_agency(record_type, record_mode, row):
    
   login = """
 mutation login {
@@ -563,7 +605,7 @@ mutation login {
 # update_row_agency - update a specific agency row
 #
 #####################################################
-def update_row_agency(record_type: RecordType, record_mode: RecordMode, row, id_value):
+def update_row_agency(record_type, record_mode, row, id_value):
 
   # Check to ignore the UnCruise Agency 
   if 'UnCruise' in row['Account.Name']:
@@ -627,7 +669,7 @@ mutation login {
 # update_record - update a specific record by id
 #
 #####################################################
-def update_record(record_type: RecordType, id_value, access_token):
+def update_record(record_type, id_value, access_token):
    
   query = "Unknown"
   with open('C:/repo/seaware-sync/queries/update_' + record_type.name.lower() + '.graphQL', 'r') as file:
@@ -658,7 +700,7 @@ def update_record(record_type: RecordType, id_value, access_token):
 # delete_record - delete a specific record by id
 #
 #####################################################
-def delete_record(record_type: RecordType, id_value, access_token):
+def delete_record(record_type, id_value, access_token):
    
   graphql_query = """
 mutation deleteRecord {
@@ -710,7 +752,7 @@ mutation deleteRecord {
 # create_record - create a specific record by id
 #
 #####################################################
-def create_record(record_type: RecordType, id_value, access_token):
+def create_record(record_type, id_value, access_token):
    
   graphql_query = """
 mutation createRecord {
@@ -762,7 +804,7 @@ mutation createRecord {
 # fetch_items - responsible for initial page and additional page results based on cursor
 #
 #####################################################
-def fetch_items(record_type: RecordType, record_mode: RecordMode, row = None, cursor = None, access_token = None):
+def fetch_items(record_type, record_mode, row = None, cursor = None, access_token = None):
    
   login = """
 mutation login {
@@ -833,7 +875,107 @@ mutation login {
         query = query.replace('ALTID_VALUE', row['Account.AgencyID__c'])
 
   variables = {
-    'first': 100  # Number of items to fetch (500 is the max)
+    'first': 500  # Number of items to fetch (500 is the max)
+    ,'after': cursor  # Cursor for pagination
+  }
+
+  response = requests.post(url=GRAPHQL_URL, json={'query': query, 'variables': variables}, headers=headers) 
+  print("response status code: ", response.status_code) 
+  #if response.status_code == 200: 
+  #    print("response : ",response.content) 
+
+  # response.json() and json.loads(response.content) I think are equivalent methods to create a dictionary of json objects
+  return response.json()
+
+#####################################################
+#
+# fetch_items_bylookup - responsible for initial page and additional page results based on cursor
+#
+#####################################################
+def fetch_items_bylookup(record_type, record_mode, row = None, cursor = None, access_token = None):
+   
+  login = """
+mutation login {
+
+  login(role:Internal ) {
+    token
+  }
+}
+"""
+
+  token = access_token
+
+  if cursor == None:
+    
+    #login to get token
+    #response = requests.post(url=GRAPHQL_URL, json={'query': query, 'variables': variables})
+    response = requests.post(url=GRAPHQL_URL, json={"query": login}) 
+  
+    if response.status_code == 200:
+      data = response.json()
+      token = data['data']['login']['token']
+    else:
+      raise Exception(f"Login failed: {response.status_code} {response.text}")
+    
+  headers = {
+    'Authorization': f'Bearer {token}'
+  }
+
+  input_query = 'Reservations'
+  if record_type == RecordType.CLIENT:
+     
+    input_query = 'Clients'
+
+  elif record_type == RecordType.AGENT:
+     
+    input_query = 'Agents'
+
+  elif record_type == RecordType.AGENCY:
+    
+    input_query = 'Agencies'
+
+  query = None
+  with open('C:/repo/seaware-sync/queries/get' + input_query + 'ByLookup.graphQL', 'r') as file:
+    query = file.read()
+
+  # Check for UPDATE query then update params - UPDATE is a utility tool for setting a value(s) on multiple records
+  if record_mode == RecordMode.UPDATE:
+
+    query = query.replace('altId: "ALTID_VALUE"', 'isInternal: true')
+  else:
+
+    if record_type == RecordType.CLIENT:
+      
+      if row is not None:
+        # Columns: Id	Name	CustomerID__c	Seaware_Id__c	FirstName	LastName	Email	MiddleName	Title
+
+        safeValue = ''
+        if not pd.isna(row['FirstName']) and not str(row['FirstName']).strip() == "":
+          safeValue = row['FirstName']
+
+        query = query.replace('FIRSTNAME_VALUE', safeValue)
+        query = query.replace('LASTNAME_VALUE', row['LastName'])
+
+        safeValue = ''
+        if not pd.isna(row['Birthdate']) and not str(row['Birthdate']).strip() == "":
+          safeValue = row['Birthdate']
+
+        query = query.replace('BIRTHDAY_VALUE', safeValue)
+
+    elif record_type == RecordType.AGENT:
+      
+      if row is not None:
+        # Columns: Id	Name	FirstName	LastName	Email	RepresentativeID__c
+        query = query.replace('ALTID_VALUE', row['RepresentativeID__c'])
+
+    elif record_type == RecordType.AGENCY:
+      
+      if row is not None:
+        # Columns: Id	Name	AgencyID__c	Seaware_Id__c
+        query = query.replace('ALTID_VALUE', row['Account.AgencyID__c'])
+
+  variables = {
+    'first': 500  # Number of items to fetch (500 is the max)
     ,'after': cursor  # Cursor for pagination
   }
 
@@ -850,7 +992,7 @@ mutation login {
 # process_record - 
 #
 #####################################################
-def process_record(record_type: RecordType, record_type_value, record_mode: RecordMode, json_res):
+def process_record(record_type, record_type_value, record_mode, json_res):
 
   # Flatten the JSON data (results)
   flattened_data = flatten_json_results(json_res)
@@ -873,7 +1015,7 @@ def process_record(record_type: RecordType, record_type_value, record_mode: Reco
   if record_type == RecordType.RESERVATION:
     da_flatten_list_bookings(edges, record_type.name + '_Booking', None)
 
-def da_flatten_list(record_type: RecordType, record_mode: RecordMode, json_list, access_token):
+def da_flatten_list(record_type, record_mode, json_list, access_token):
 
   # Create a list of dictionaries for CSV writing
   csv_data = []

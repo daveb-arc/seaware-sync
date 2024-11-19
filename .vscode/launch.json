@@ -11,9 +11,11 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "args": [
+//                "RESERVATION"
+//                ,"QUERY"
                 "CLIENT"
                 ,"SFPUSH"
-            ]
+]
         }
     ]
 }
