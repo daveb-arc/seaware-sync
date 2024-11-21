@@ -7,9 +7,9 @@ import os
 from enum import Enum
 from datetime import date
 
-GRAPHQL_URL = 'https://testreservations.uncruise.com:3000/graphql'
+#GRAPHQL_URL = 'https://testreservations.uncruise.com:3000/graphql'
 #GRAPHQL_URL = 'https://devreservations.uncruise.com:3000/graphql'
-#GRAPHQL_URL = 'https://reservations.uncruise.com:3000/graphql'
+GRAPHQL_URL = 'https://reservations.uncruise.com:3000/graphql'
 
 class RecordType(Enum):
     CLIENT = 1
@@ -343,14 +343,14 @@ mutation login {
     query = file.read()
 
   # Id	Name	CustomerID__c	Seaware_Id__c	FirstName	LastName	Email	MiddleName	Title
-  query = query.replace('ALTID_VALUE', row['CustomerID__c'])
+  query = query.replace('ALTID_VALUE', str(row['CustomerID__c']))
 
   safeValue = ''
   if not pd.isna(row['FirstName']) and not str(row['FirstName']).strip() == "":
     safeValue = row['FirstName']
   
   query = query.replace('FIRSTNAME_VALUE', safeValue)
-  query = query.replace('LASTNAME_VALUE', row['LastName'])
+  query = query.replace('LASTNAME_VALUE', str(row['LastName']))
 
   response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
   if response.status_code != 200:
@@ -394,14 +394,14 @@ mutation login {
 
   # Id	Name	CustomerID__c	Seaware_Id__c	FirstName	LastName	Email	MiddleName	Title
   query = query.replace('CLIENTID_VALUE', id_value)
-  query = query.replace('ALTID_VALUE', row['CustomerID__c'])
+  query = query.replace('ALTID_VALUE', str(row['CustomerID__c']))
 
   safeValue = ''
   if not pd.isna(row['FirstName']) and not str(row['FirstName']).strip() == "":
     safeValue = row['FirstName']
 
   query = query.replace('FIRSTNAME_VALUE', safeValue)
-  query = query.replace('LASTNAME_VALUE', row['LastName'])
+  query = query.replace('LASTNAME_VALUE', str(row['LastName']))
 
   safeValue = ''
   if not pd.isna(row['Email']) and not str(row['Email']).strip() == "":
@@ -475,14 +475,14 @@ mutation login {
     query = file.read()
 
   # Columns: Id	Name	FirstName	LastName	Email	RepresentativeID__c
-  query = query.replace('ALTID_VALUE', row['RepresentativeID__c'])
+  query = query.replace('ALTID_VALUE', str(row['RepresentativeID__c']))
 
   safeValue = ''
   if not pd.isna(row['FirstName']) and not str(row['FirstName']).strip() == "":
     safeValue = row['FirstName']
 
   query = query.replace('FIRSTNAME_VALUE', safeValue)
-  query = query.replace('LASTNAME_VALUE', row['LastName'])
+  query = query.replace('LASTNAME_VALUE', str(row['LastName']))
 
   response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
   if response.status_code != 200:
@@ -536,7 +536,7 @@ mutation login {
     safeValue = row['FirstName']
 
   query = query.replace('FIRSTNAME_VALUE', safeValue)
-  query = query.replace('LASTNAME_VALUE', row['FirstName'])
+  query = query.replace('LASTNAME_VALUE', str(row['FirstName']))
 
   safeValue = ''
   if not pd.isna(row['Email']) and not str(row['Email']).strip() == "":
@@ -591,8 +591,8 @@ mutation login {
     query = file.read()
 
   # Id	Name	CustomerID__c	Seaware_Id__c	FirstName	LastName	Email	MiddleName	Title
-  query = query.replace('ALTID_VALUE', row['Account.AgencyID__c'])
-  query = query.replace('NAME_VALUE', row['Account.Name'])
+  query = query.replace('ALTID_VALUE', str(row['Account.AgencyID__c']))
+  query = query.replace('NAME_VALUE', str(row['Account.Name']))
 
   response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
   if response.status_code != 200:
@@ -640,8 +640,8 @@ mutation login {
 
   # Columns: Id	Name	AgencyID__c	Seaware_Id__c	AgencyType__c	Consortium__c	Consortium_Start_Date__c	Consortium_End_Date__c	IATA_Number__c
   query = query.replace('AGENCYID_VALUE', id_value)
-  query = query.replace('AGENCYNAME_VALUE', row['Account.Name'])  
-  query = query.replace('AGENGYTYPE_VALUE', row['Account.AgencyType__c'])
+  query = query.replace('AGENCYNAME_VALUE', str(row['Account.Name']))  
+  query = query.replace('AGENGYTYPE_VALUE', str(row['Account.AgencyType__c']))
 
   consortium = ''
   is_consortium = 'false'
@@ -860,19 +860,19 @@ mutation login {
       
       if row is not None:
         # Columns: Id	Name	CustomerID__c	Seaware_Id__c	FirstName	LastName	Email	MiddleName	Title
-        query = query.replace('ALTID_VALUE', row['CustomerID__c'])
+        query = query.replace('ALTID_VALUE', str(row['CustomerID__c']))
 
     elif record_type == RecordType.AGENT:
       
       if row is not None:
         # Columns: Id	Name	FirstName	LastName	Email	RepresentativeID__c
-        query = query.replace('ALTID_VALUE', row['RepresentativeID__c'])
+        query = query.replace('ALTID_VALUE', str(row['RepresentativeID__c']))
 
     elif record_type == RecordType.AGENCY:
       
       if row is not None:
         # Columns: Id	Name	AgencyID__c	Seaware_Id__c
-        query = query.replace('ALTID_VALUE', row['Account.AgencyID__c'])
+        query = query.replace('ALTID_VALUE', str(row['Account.AgencyID__c']))
 
   variables = {
     'first': 500  # Number of items to fetch (500 is the max)
@@ -954,7 +954,7 @@ mutation login {
           safeValue = row['FirstName']
 
         query = query.replace('FIRSTNAME_VALUE', safeValue)
-        query = query.replace('LASTNAME_VALUE', row['LastName'])
+        query = query.replace('LASTNAME_VALUE', str(row['LastName']))
 
         safeValue = ''
         if not pd.isna(row['Birthdate']) and not str(row['Birthdate']).strip() == "":
@@ -966,13 +966,13 @@ mutation login {
       
       if row is not None:
         # Columns: Id	Name	FirstName	LastName	Email	RepresentativeID__c
-        query = query.replace('ALTID_VALUE', row['RepresentativeID__c'])
+        query = query.replace('ALTID_VALUE', str(row['RepresentativeID__c']))
 
     elif record_type == RecordType.AGENCY:
       
       if row is not None:
         # Columns: Id	Name	AgencyID__c	Seaware_Id__c
-        query = query.replace('ALTID_VALUE', row['Account.AgencyID__c'])
+        query = query.replace('ALTID_VALUE', str(row['Account.AgencyID__c']))
 
   variables = {
     'first': 500  # Number of items to fetch (500 is the max)
@@ -1131,16 +1131,28 @@ def da_flatten_list_bookings(json_list, key, reservationKey):
               da_flatten_list_bookings(guests, RecordType.RESERVATION.name + '_Guests', reservationKey)
               da_flatten_list_bookings(guests[0]['voyages'], RecordType.RESERVATION.name + '_Voyages', reservationKey)
 
+              filename = RecordType.RESERVATION.name + '_VoyagePackages'
+              #check_csv(filename)
               if len(guests[0]['voyages']) > 0:
-                da_flatten_list_bookings(guests[0]['voyages'][0]['pkg'], RecordType.RESERVATION.name + '_VoyagePackages', reservationKey)
+                da_flatten_list_bookings(guests[0]['voyages'][0]['pkg'], filename, reservationKey)
 
+            filename = RecordType.RESERVATION.name + '_Agencies'
+            #check_csv(filename)
             if not item.get('node') == None and not item.get('node').get('agency') == None:
               agencies = item.get('node').get('agency')
-              da_flatten_list_bookings(agencies, RecordType.RESERVATION.name + '_Agencies', reservationKey)
+              da_flatten_list_bookings(agencies, filename, reservationKey)
 
+            filename = RecordType.RESERVATION.name + '_secondaryAgent'
+            #check_csv(filename)
+            if not item.get('node') == None and not item.get('node').get('secondaryAgent') == None:
+              secondaryAgent = item.get('node').get('secondaryAgent')
+              da_flatten_list_bookings(secondaryAgent, filename, reservationKey)
+
+            filename = RecordType.RESERVATION.name + '_Contact'
+            #check_csv(filename)
             if not item.get('node') == None and not item.get('node').get('contact') == None:
               contact = item.get('node').get('contact')
-              da_flatten_list_bookings(contact, RecordType.RESERVATION.name + '_Contact', reservationKey)
+              da_flatten_list_bookings(contact, filename, reservationKey)
 
         else:
             print(f"Skipping non-dict item in list '{key}': {item}")
@@ -1220,6 +1232,15 @@ def write_to_csv(data, filename):
             writer.writerow(row.values())
 
     print(f"Written {full_filename}")
+
+def check_csv(filename):
+    
+    full_filename = os.path.join("C:/repo/seaware-sync/output_csv", filename + '.csv')
+
+    with open(full_filename, 'w') as file:
+      pass  # The file is created and immediately closed, leaving it empty
+
+    print(f"Created {full_filename}")
 
 # Using the special variable 
 # __name__

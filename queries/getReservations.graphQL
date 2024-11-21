@@ -58,6 +58,15 @@ fragment ReservationFragment on Reservation {
         }
     }
 
+    secondaryAgent {
+        id
+        key
+        altId
+        firstName
+        lastName
+        email    
+    }
+
     shipRooms {
         name
     }
@@ -260,6 +269,17 @@ fragment ReservationFragment on Reservation {
                     code
                     name
                 }
+            }
+
+            cabinChain	{
+              cabin {
+                name
+                key
+                number
+                category {
+                  key
+                }
+              }
             }
 
             category {
