@@ -1133,7 +1133,7 @@ def da_flatten_list_bookings(json_list, key, reservationKey):
 
               filename = RecordType.RESERVATION.name + '_VoyagePackages'
               #check_csv(filename)
-              if len(guests[0]['voyages']) > 0:
+              if len(guests[0]['voyages']) > 0 and not guests[0]['voyages'][0]['pkg'] == None:
                 da_flatten_list_bookings(guests[0]['voyages'][0]['pkg'], filename, reservationKey)
 
             filename = RecordType.RESERVATION.name + '_Agencies'
