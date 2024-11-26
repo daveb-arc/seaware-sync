@@ -515,7 +515,7 @@ def update_row_agent(record_type, record_mode, row, id_value):
     safeValue = row['FirstName']
 
   query = query.replace('FIRSTNAME_VALUE', safeValue)
-  query = query.replace('LASTNAME_VALUE', str(row['FirstName']))
+  query = query.replace('LASTNAME_VALUE', str(row['LastName']))
 
   safeValue = ''
   if not pd.isna(row['Email']) and not str(row['Email']).strip() == "":

@@ -6,6 +6,7 @@ mutation updateTravelAgentRecord {
       agent:{
         firstName: "FIRSTNAME_VALUE"
         lastName: "LASTNAME_VALUE"
+        middleName: ""
         email: "EMAIL_VALUE"
         password: "nopassword"
         allowWebAccess: false
