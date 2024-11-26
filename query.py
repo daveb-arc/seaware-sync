@@ -78,8 +78,61 @@ def main():
 
     process_seaware(record_type, record_mode)
 
+  logout_graphql()
+
   exit
 
+#####################################################
+#
+# login_graphql - 
+#
+#####################################################
+def login_graphql():
+   
+  login = """
+mutation login {
+
+  login(role:Internal ) {
+    token
+  }
+}
+"""
+
+  token = None
+
+  response = requests.post(url=GRAPHQL_URL, json={"query": login}) 
+
+  if response.status_code == 200:
+    data = response.json()
+    token = data['data']['login']['token']
+  else:
+    raise Exception(f"Login failed: {response.status_code} {response.text}")
+    
+  headers = {
+    'Authorization': f'Bearer {token}'
+  }
+
+  return headers
+
+#####################################################
+#
+# login_graphql - 
+#
+#####################################################
+def logout_graphql():
+   
+  logout = """
+mutation logout {
+
+  logout
+}
+"""
+
+  response = requests.post(url=GRAPHQL_URL, json={"query": logout}) 
+
+  if response.status_code != 200:
+    raise Exception(f"Logout failed: {response.status_code} {response.text}")
+    
 #####################################################
 #
 # process_salesforce_clients - 
@@ -194,6 +247,7 @@ def process_seaware(record_type, record_mode, row = None):
 
   else:
     print("unknown response type")
+    logout_graphql()
     return json_res
 
   # Check for next page - max query is total of 500 regardless of the paging request size
@@ -216,6 +270,8 @@ def process_seaware(record_type, record_mode, row = None):
 
     else:
       print("unknown query type")       
+
+  logout_graphql()
 
   return json_res
 
@@ -240,6 +296,7 @@ def process_seaware_bylookup(record_type, record_mode, row = None):
 
   else:
     print("unknown response type")
+    logout_graphql()
     return json_res
 
   # Check for next page - max query is total of 500 regardless of the paging request size
@@ -263,6 +320,8 @@ def process_seaware_bylookup(record_type, record_mode, row = None):
     else:
       print("unknown query type")       
 
+  logout_graphql()
+  
   return json_res
 
 #####################################################
@@ -315,28 +374,6 @@ def update_record_paging(record_type, id_value, access_token):
 #####################################################
 def insert_row_client(record_type, record_mode, row):
    
-  login = """
-mutation login {
-
-  login(role:Internal ) {
-    token
-  }
-}
-"""
-
-  token = None
-
-  response = requests.post(url=GRAPHQL_URL, json={"query": login}) 
-
-  if response.status_code == 200:
-    data = response.json()
-    token = data['data']['login']['token']
-  else:
-    raise Exception(f"Login failed: {response.status_code} {response.text}")
-    
-  headers = {
-    'Authorization': f'Bearer {token}'
-  }
 
   query = "Unknown"
   with open('C:/repo/seaware-sync/queries/insert_row_' + record_type.name.lower() + '.graphQL', 'r') as file:
@@ -352,9 +389,13 @@ mutation login {
   query = query.replace('FIRSTNAME_VALUE', safeValue)
   query = query.replace('LASTNAME_VALUE', str(row['LastName']))
 
+  headers = login_graphql()
+
   response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
   if response.status_code != 200:
     raise Exception(f"Login failed: {response.status_code} {response.text}")
+  
+  logout_graphql()
     
   return response
 
@@ -365,29 +406,6 @@ mutation login {
 #####################################################
 def update_row_client(record_type, record_mode, row, id_value):
    
-  login = """
-mutation login {
-
-  login(role:Internal ) {
-    token
-  }
-}
-"""
-
-  token = None
-
-  response = requests.post(url=GRAPHQL_URL, json={"query": login}) 
-
-  if response.status_code == 200:
-    data = response.json()
-    token = data['data']['login']['token']
-  else:
-    raise Exception(f"Login failed: {response.status_code} {response.text}")
-    
-  headers = {
-    'Authorization': f'Bearer {token}'
-  }
-
   query = "Unknown"
   with open('C:/repo/seaware-sync/queries/update_row_' + record_type.name.lower() + '.graphQL', 'r') as file:
     query = file.read()
@@ -419,8 +437,11 @@ mutation login {
   if not pd.isna(row['Gender__c']) and not str(row['Gender__c']).strip() == "":
     safeValue = row['Gender__c'][0]
     
-  query = query.replace('GENDER_VALUE', safeValue)
-
+  if safeValue == '':
+    query = query.replace('gender: GENDER_VALUE', '')
+  else:
+    query = query.replace('GENDER_VALUE', safeValue)
+     
   safeValue = '0'
   if not pd.isna(row['No_of_Bookings__c']) and not str(row['No_of_Bookings__c']).strip() == "":
     safeValue = round(row['No_of_Bookings__c'])
@@ -434,10 +455,14 @@ mutation login {
 
   query = query.replace('GUESTTYPE_VALUE', str(safeValue))
 
+  headers = login_graphql()
+
   response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
   if response.status_code != 200:
     raise Exception(f"Login failed: {response.status_code} {response.text}")
-  
+
+  logout_graphql()
+
   return response
 
 #####################################################
@@ -447,29 +472,6 @@ mutation login {
 #####################################################
 def insert_row_agent(record_type, record_mode, row):
    
-  login = """
-mutation login {
-
-  login(role:Internal ) {
-    token
-  }
-}
-"""
-
-  token = None
-
-  response = requests.post(url=GRAPHQL_URL, json={"query": login}) 
-
-  if response.status_code == 200:
-    data = response.json()
-    token = data['data']['login']['token']
-  else:
-    raise Exception(f"Login failed: {response.status_code} {response.text}")
-    
-  headers = {
-    'Authorization': f'Bearer {token}'
-  }
-
   query = "Unknown"
   with open('C:/repo/seaware-sync/queries/insert_row_' + record_type.name.lower() + '.graphQL', 'r') as file:
     query = file.read()
@@ -484,10 +486,14 @@ mutation login {
   query = query.replace('FIRSTNAME_VALUE', safeValue)
   query = query.replace('LASTNAME_VALUE', str(row['LastName']))
 
+  headers = login_graphql()
+
   response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
   if response.status_code != 200:
     raise Exception(f"Login failed: {response.status_code} {response.text}")
-    
+
+  logout_graphql()
+
   return response
 
 #####################################################
@@ -496,33 +502,6 @@ mutation login {
 #
 #####################################################
 def update_row_agent(record_type, record_mode, row, id_value):
-
-  # Check to ignore the UnCruise Agency 
-  if 'UnCruise' in row['Account.Name']:
-    return
-
-  login = """
-mutation login {
-
-  login(role:Internal ) {
-    token
-  }
-}
-"""
-
-  token = None
-
-  response = requests.post(url=GRAPHQL_URL, json={"query": login}) 
-
-  if response.status_code == 200:
-    data = response.json()
-    token = data['data']['login']['token']
-  else:
-    raise Exception(f"Login failed: {response.status_code} {response.text}")
-    
-  headers = {
-    'Authorization': f'Bearer {token}'
-  }
 
   query = "Unknown"
   with open('C:/repo/seaware-sync/queries/update_row_' + record_type.name.lower() + '.graphQL', 'r') as file:
@@ -550,10 +529,14 @@ mutation login {
 
   query = query.replace('AGENCYKEY_VALUE', str(safeValue))
 
+  headers = login_graphql()
+
   response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
   if response.status_code != 200:
     raise Exception(f"Login failed: {response.status_code} {response.text}")
-  
+
+  logout_graphql()
+
   return response
 
 #####################################################
@@ -563,29 +546,6 @@ mutation login {
 #####################################################
 def insert_row_agency(record_type, record_mode, row):
    
-  login = """
-mutation login {
-
-  login(role:Internal ) {
-    token
-  }
-}
-"""
-
-  token = None
-
-  response = requests.post(url=GRAPHQL_URL, json={"query": login}) 
-
-  if response.status_code == 200:
-    data = response.json()
-    token = data['data']['login']['token']
-  else:
-    raise Exception(f"Login failed: {response.status_code} {response.text}")
-    
-  headers = {
-    'Authorization': f'Bearer {token}'
-  }
-
   query = "Unknown"
   with open('C:/repo/seaware-sync/queries/insert_row_' + record_type.name.lower() + '.graphQL', 'r') as file:
     query = file.read()
@@ -594,10 +554,14 @@ mutation login {
   query = query.replace('ALTID_VALUE', str(row['Account.AgencyID__c']))
   query = query.replace('NAME_VALUE', str(row['Account.Name']))
 
+  headers = login_graphql()
+
   response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
   if response.status_code != 200:
     raise Exception(f"Login failed: {response.status_code} {response.text}")
-    
+
+  logout_graphql()
+
   return response
 
 #####################################################
@@ -610,29 +574,6 @@ def update_row_agency(record_type, record_mode, row, id_value):
   # Check to ignore the UnCruise Agency 
   if 'UnCruise' in row['Account.Name']:
     return
-
-  login = """
-mutation login {
-
-  login(role:Internal ) {
-    token
-  }
-}
-"""
-
-  token = None
-
-  response = requests.post(url=GRAPHQL_URL, json={"query": login}) 
-
-  if response.status_code == 200:
-    data = response.json()
-    token = data['data']['login']['token']
-  else:
-    raise Exception(f"Login failed: {response.status_code} {response.text}")
-    
-  headers = {
-    'Authorization': f'Bearer {token}'
-  }
 
   query = "Unknown"
   with open('C:/repo/seaware-sync/queries/update_row_' + record_type.name.lower() + '.graphQL', 'r') as file:
@@ -657,11 +598,15 @@ mutation login {
      iata = row['Account.IATA_Number__c']
 
   query = query.replace('IATA_VALUE', iata)
-  
+
+  headers = login_graphql()
+
   response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
   if response.status_code != 200:
     raise Exception(f"Login failed: {response.status_code} {response.text}")
-  
+
+  logout_graphql()
+
   return response
 
 #####################################################
