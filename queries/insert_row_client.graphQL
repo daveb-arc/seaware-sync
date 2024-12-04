@@ -2,6 +2,7 @@ mutation createClientRecord {
   
   clientCreate(
     input: {
+      store: true
       client: {
         altId: "ALTID_VALUE"
         firstName: "FIRSTNAME_VALUE"
@@ -27,7 +28,6 @@ mutation createClientRecord {
           number: "MOBILE_PHONENUMBER"
         }]
       }
-      store: true
     }) {
     
     result {

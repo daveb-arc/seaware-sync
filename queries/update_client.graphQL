@@ -2,6 +2,8 @@ mutation updateRecord {
 
   clientUpdate(
     input: {
+      store: true
+      updateCollections: true
       id: "RECORDID_VALUE"
       client:{
         altId: "ALTID_VALUE"
@@ -13,23 +15,7 @@ mutation updateRecord {
         guestType: {
           key: "REGULAR"
         }
-        phones: [{
-          type: {
-            key: "PRIMARY"
-          }        
-          intlCode: 1
-          number: "PRIMARY_PHONENUMBER"
-        },
-        {
-          type: {
-            key: "MOBILE"
-          }        
-          intlCode: 1
-          number: "MOBILE_PHONENUMBER"
-        }]
       }
-      store: true
-      updateCollections: true
     }) {
     
     clientMutationId
