@@ -141,6 +141,7 @@ mutation logout {
 def process_salesforce_clients(record_type, record_mode):
     
   import pandas as pd
+  import math
 
   full_filename = 'C:/repo/Salesforce-Exporter-Private/Clients/SEAWARE/Salesforce-Exporter/Clients/SEAWARE/Export/Contact-Prod.csv'
   fileCheckPath = Path(full_filename)
@@ -154,26 +155,33 @@ def process_salesforce_clients(record_type, record_mode):
 
       if row['Contact_Type__c'] != 'Guest':
          continue
-      
-      # Query to setup output file for processing in Excel PowerQuery update to SF
-      json_res = process_seaware(record_type, RecordMode.QUERY, row)
 
-      # Check if record found in Seaware by Customer ID
-      if len(json_res.get('data').get('clients').get('edges')) <= 0:
+      id_value = row['Seaware_Id__c']
 
-        # Check if record found in Seaware by Lookup - FirstName, LastName, DOB
-        json_res = process_seaware_bylookup(record_type, RecordMode.QUERY, row)
-
-      # Check if record found in Seaware by Customer ID or Lookup
-      if len(json_res.get('data').get('clients').get('edges')) <= 0:
-
-        # Attempt to insert - Seaware DB will fail call if altid already set on a record
-        insert_row_client(record_type, RecordMode.INSERT, row)
-
+      if math.isnan(row['Seaware_Id__c']):
         # Query to setup output file for processing in Excel PowerQuery update to SF
         json_res = process_seaware(record_type, RecordMode.QUERY, row)
 
-      id_value = json_res.get('data').get('clients').get('edges')[0].get('node').get('key')
+        # Check if record found in Seaware by Customer ID
+        if len(json_res.get('data').get('clients').get('edges')) <= 0:
+
+          # Check if record found in Seaware by Lookup - FirstName, LastName, DOB
+          json_res = process_seaware_bylookup(record_type, RecordMode.QUERY, row)
+
+        # Check if record found in Seaware by Customer ID or Lookup
+        if len(json_res.get('data').get('clients').get('edges')) <= 0:
+
+          # Attempt to insert - Seaware DB will fail call if altid already set on a record
+          insert_row_client(record_type, RecordMode.INSERT, row)
+
+          # Query to setup output file for processing in Excel PowerQuery update to SF
+          json_res = process_seaware(record_type, RecordMode.QUERY, row)
+
+        id_value = json_res.get('data').get('clients').get('edges')[0].get('node').get('key')
+
+      else:
+          
+        id_value = str(int(id_value))
 
       # Update Request for complete field updates
       update_row_client(record_type, RecordMode.UPDATE, row, id_value)
@@ -406,6 +414,27 @@ def insert_row_client(record_type, record_mode, row):
   
   query = query.replace('FIRSTNAME_VALUE', safeValue)
   query = query.replace('LASTNAME_VALUE', str(row['LastName']))
+
+  safeValue = ''
+  if not pd.isna(row['Email']) and not str(row['Email']).strip() == "":
+    safeValue = row['Email']
+
+  query = query.replace('EMAIL_VALUE', safeValue)
+
+  safeValue = ''
+  if not pd.isna(row['Birthdate']) and not str(row['Birthdate']).strip() == "":
+    safeValue = row['Birthdate']
+
+  query = query.replace('BIRTHDAY_VALUE', safeValue)
+
+  safeValue = ''
+  if not pd.isna(row['Gender__c']) and not str(row['Gender__c']).strip() == "":
+    safeValue = row['Gender__c'][0]
+    
+  if safeValue == '':
+    query = query.replace('gender: GENDER_VALUE', '')
+  else:
+    query = query.replace('GENDER_VALUE', safeValue)
 
   headers = login_graphql()
 

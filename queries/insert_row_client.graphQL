@@ -6,7 +6,11 @@ mutation createClientRecord {
         altId: "ALTID_VALUE"
         firstName: "FIRSTNAME_VALUE"
         lastName: "LASTNAME_VALUE"
+        birthday: "BIRTHDAY_VALUE"
+        eMail: "EMAIL_VALUE"
+        gender: GENDER_VALUE
       }
+      store: true
     }) {
     
     result {

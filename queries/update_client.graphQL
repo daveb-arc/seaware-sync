@@ -9,6 +9,7 @@ mutation updateRecord {
         lastName: "LASTNAME_VALUE"
         birthday: "BIRTHDAY_VALUE"
         eMail: "EMAIL_VALUE"
+        gender: GENDER_VALUE
       }
       store: true
       updateCollections: true
