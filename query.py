@@ -142,7 +142,13 @@ def process_salesforce_clients(record_type, record_mode):
     
   import pandas as pd
 
-  data_frame = pd.read_csv('C:/repo/Salesforce-Exporter-Private/Clients/SEAWARE/Salesforce-Exporter/Clients/SEAWARE/Export/Contact-Prod.csv')
+  full_filename = 'C:/repo/Salesforce-Exporter-Private/Clients/SEAWARE/Salesforce-Exporter/Clients/SEAWARE/Export/Contact-Prod.csv'
+  fileCheckPath = Path(full_filename)
+  fileCheckExists = fileCheckPath.is_file()
+  if not fileCheckExists:
+     return
+  
+  data_frame = pd.read_csv(full_filename)
 
   for index, row in data_frame.iterrows():
 
@@ -176,7 +182,13 @@ def process_salesforce_agents(record_type, record_mode):
     
   import pandas as pd
 
-  data_frame = pd.read_csv('C:/repo/Salesforce-Exporter-Private/Clients/SEAWARE/Salesforce-Exporter/Clients/SEAWARE/Export/Contact-Prod.csv')
+  full_filename = 'C:/repo/Salesforce-Exporter-Private/Clients/SEAWARE/Salesforce-Exporter/Clients/SEAWARE/Export/Contact-Prod.csv'
+  fileCheckPath = Path(full_filename)
+  fileCheckExists = fileCheckPath.is_file()
+  if not fileCheckExists:
+     return
+
+  data_frame = pd.read_csv(full_filename)
 
   for index, row in data_frame.iterrows():
 
@@ -203,7 +215,13 @@ def process_salesforce_agencies(record_type, record_mode):
     
   import pandas as pd
 
-  data_frame = pd.read_csv('C:/repo/Salesforce-Exporter-Private/Clients/SEAWARE/Salesforce-Exporter/Clients/SEAWARE/Export/Contact-Prod.csv')
+  full_filename = 'C:/repo/Salesforce-Exporter-Private/Clients/SEAWARE/Salesforce-Exporter/Clients/SEAWARE/Export/Contact-Prod.csv'
+  fileCheckPath = Path(full_filename)
+  fileCheckExists = fileCheckPath.is_file()
+  if not fileCheckExists:
+     return
+
+  data_frame = pd.read_csv(full_filename)
 
   for index, row in data_frame.iterrows():
 

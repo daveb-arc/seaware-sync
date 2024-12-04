@@ -10,6 +10,8 @@ mutation updateRecord {
         birthday: "BIRTHDAY_VALUE"
         eMail: "EMAIL_VALUE"
       }
+      store: true
+      updateCollections: true
     }) {
     
     clientMutationId
