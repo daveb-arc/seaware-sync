@@ -9,6 +9,23 @@ mutation createClientRecord {
         birthday: "BIRTHDAY_VALUE"
         eMail: "EMAIL_VALUE"
         gender: GENDER_VALUE
+        guestType: {
+          key: "REGULAR"
+        }
+        phones: [{
+          type: {
+            key: "PRIMARY"
+          }        
+          intlCode: 1
+          number: "PRIMARY_PHONENUMBER"
+        },
+        {
+          type: {
+            key: "MOBILE"
+          }        
+          intlCode: 1
+          number: "MOBILE_PHONENUMBER"
+        }]
       }
       store: true
     }) {

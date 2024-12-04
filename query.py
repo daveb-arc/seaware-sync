@@ -399,7 +399,6 @@ def update_record_paging(record_type, id_value, access_token):
 #
 #####################################################
 def insert_row_client(record_type, record_mode, row):
-   
 
   query = "Unknown"
   with open('C:/repo/seaware-sync/queries/insert_row_' + record_type.name.lower() + '.graphQL', 'r') as file:
@@ -420,6 +419,18 @@ def insert_row_client(record_type, record_mode, row):
     safeValue = row['Email']
 
   query = query.replace('EMAIL_VALUE', safeValue)
+
+  safeValue = '0'
+  if not pd.isna(row['Phone']) and not str(row['Phone']).strip() == "":
+    safeValue = row['Phone']
+
+  query = query.replace('PRIMARY_PHONENUMBER', safeValue)
+
+  safeValue = '0'
+  if not pd.isna(row['MobilePhone']) and not str(row['MobilePhone']).strip() == "":
+    safeValue = row['MobilePhone']
+
+  query = query.replace('MOBILE_PHONENUMBER', safeValue)
 
   safeValue = ''
   if not pd.isna(row['Birthdate']) and not str(row['Birthdate']).strip() == "":
@@ -473,6 +484,18 @@ def update_row_client(record_type, record_mode, row, id_value):
     safeValue = row['Email']
 
   query = query.replace('EMAIL_VALUE', safeValue)
+
+  safeValue = '0'
+  if not pd.isna(row['Phone']) and not str(row['Phone']).strip() == "":
+    safeValue = row['Phone']
+
+  query = query.replace('PRIMARY_PHONENUMBER', safeValue)
+
+  safeValue = '0'
+  if not pd.isna(row['MobilePhone']) and not str(row['MobilePhone']).strip() == "":
+    safeValue = row['MobilePhone']
+
+  query = query.replace('MOBILE_PHONENUMBER', safeValue)
 
   safeValue = ''
   if not pd.isna(row['Birthdate']) and not str(row['Birthdate']).strip() == "":
