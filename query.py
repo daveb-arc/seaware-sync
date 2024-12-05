@@ -158,9 +158,10 @@ def process_salesforce_clients(record_type, record_mode):
 
       id_value = row['Seaware_Id__c']
 
+      # Query to setup output file for processing in Excel PowerQuery update to SF
+      json_res = process_seaware(record_type, RecordMode.QUERY, row)
+
       if math.isnan(row['Seaware_Id__c']):
-        # Query to setup output file for processing in Excel PowerQuery update to SF
-        json_res = process_seaware(record_type, RecordMode.QUERY, row)
 
         # Check if record found in Seaware by Customer ID
         if len(json_res.get('data').get('clients').get('edges')) <= 0:

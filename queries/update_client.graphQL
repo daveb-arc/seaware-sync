@@ -3,7 +3,6 @@ mutation updateRecord {
   clientUpdate(
     input: {
       store: true
-      updateCollections: true
       id: "RECORDID_VALUE"
       client:{
         altId: "ALTID_VALUE"
