@@ -352,6 +352,16 @@ def process_seaware_bylookup(record_type, record_mode, row = None):
 
 #####################################################
 #
+# get_safe_string - 
+#
+#####################################################
+def get_safe_string(string_value):
+
+  string_value = string_value.replace(' ', '')
+  return string_value
+
+#####################################################
+#
 # update_record - update a specific record by id, update isInternal on all records because that is
 #   used as the workaround flag for paging
 #
@@ -400,6 +410,8 @@ def update_record_paging(record_type, id_value, access_token):
 #####################################################
 def insert_row_client(record_type, record_mode, row):
 
+  print('insert_row_client - ' + str(row['FirstName']).strip() + ' ' + str(row['LastName']))
+
   query = "Unknown"
   with open('C:/repo/seaware-sync/queries/insert_row_' + record_type.name.lower() + '.graphQL', 'r') as file:
     query = file.read()
@@ -408,38 +420,42 @@ def insert_row_client(record_type, record_mode, row):
   query = query.replace('ALTID_VALUE', str(row['CustomerID__c']))
 
   safeValue = ''
-  if not pd.isna(row['FirstName']) and not str(row['FirstName']).strip() == "":
+  if not pd.isna(row['FirstName']) and not str(row['FirstName']).strip() == '':
     safeValue = row['FirstName']
   
   query = query.replace('FIRSTNAME_VALUE', safeValue)
   query = query.replace('LASTNAME_VALUE', str(row['LastName']))
 
   safeValue = ''
-  if not pd.isna(row['Email']) and not str(row['Email']).strip() == "":
+  if not pd.isna(row['Email']) and not str(row['Email']).strip() == '':
     safeValue = row['Email']
 
   query = query.replace('EMAIL_VALUE', safeValue)
 
-  safeValue = '0'
-  if not pd.isna(row['Phone']) and not str(row['Phone']).strip() == "":
-    safeValue = row['Phone']
-
+  safeValue = ''
+  if not pd.isna(row['Phone']) and not get_safe_string(str(row['Phone'])) == '':
+    safeValue = get_safe_string(str(row['Phone']))
+    primary_phonenumber_json = '{type:{key:"PRIMARY"} intlCode:1 number:"PRIMARY_PHONENUMBER"}'
+    query = query.replace('PRIMARY_PHONENUMBER', primary_phonenumber_json)
+  
   query = query.replace('PRIMARY_PHONENUMBER', safeValue)
 
-  safeValue = '0'
-  if not pd.isna(row['MobilePhone']) and not str(row['MobilePhone']).strip() == "":
-    safeValue = row['MobilePhone']
-
+  safeValue = ''
+  if not pd.isna(row['MobilePhone']) and not get_safe_string(str(row['MobilePhone'])) == '':
+    safeValue = get_safe_string(str(row['MobilePhone']))
+    mobile_phonenumber_json = '{type:{key:"MOBILE"} intlCode:1 number:"MOBILE_PHONENUMBER"}'
+    query = query.replace('MOBILE_PHONENUMBER', mobile_phonenumber_json)
+  
   query = query.replace('MOBILE_PHONENUMBER', safeValue)
 
   safeValue = ''
-  if not pd.isna(row['Birthdate']) and not str(row['Birthdate']).strip() == "":
+  if not pd.isna(row['Birthdate']) and not str(row['Birthdate']).strip() == '':
     safeValue = row['Birthdate']
 
   query = query.replace('BIRTHDAY_VALUE', safeValue)
 
   safeValue = ''
-  if not pd.isna(row['Gender__c']) and not str(row['Gender__c']).strip() == "":
+  if not pd.isna(row['Gender__c']) and not str(row['Gender__c']).strip() == '':
     safeValue = row['Gender__c'][0]
     
   if safeValue == '':
@@ -463,7 +479,9 @@ def insert_row_client(record_type, record_mode, row):
 #
 #####################################################
 def update_row_client(record_type, record_mode, row, id_value):
-   
+
+  print('update_row_client - ' + str(row['FirstName']).strip() + ' ' + str(row['LastName']))
+
   query = "Unknown"
   with open('C:/repo/seaware-sync/queries/update_row_' + record_type.name.lower() + '.graphQL', 'r') as file:
     query = file.read()
@@ -473,38 +491,42 @@ def update_row_client(record_type, record_mode, row, id_value):
   query = query.replace('ALTID_VALUE', str(row['CustomerID__c']))
 
   safeValue = ''
-  if not pd.isna(row['FirstName']) and not str(row['FirstName']).strip() == "":
+  if not pd.isna(row['FirstName']) and not str(row['FirstName']).strip() == '':
     safeValue = row['FirstName']
 
   query = query.replace('FIRSTNAME_VALUE', safeValue)
   query = query.replace('LASTNAME_VALUE', str(row['LastName']))
 
   safeValue = ''
-  if not pd.isna(row['Email']) and not str(row['Email']).strip() == "":
+  if not pd.isna(row['Email']) and not str(row['Email']).strip() == '':
     safeValue = row['Email']
 
   query = query.replace('EMAIL_VALUE', safeValue)
 
-  safeValue = '0'
-  if not pd.isna(row['Phone']) and not str(row['Phone']).strip() == "":
-    safeValue = row['Phone']
-
+  safeValue = ''
+  if not pd.isna(row['Phone']) and not get_safe_string(str(row['Phone'])) == '':
+    safeValue = get_safe_string(str(row['Phone']))
+    primary_phonenumber_json = '{type:{key:"PRIMARY"} intlCode:1 number:"PRIMARY_PHONENUMBER"}'
+    query = query.replace('PRIMARY_PHONENUMBER', primary_phonenumber_json)
+  
   query = query.replace('PRIMARY_PHONENUMBER', safeValue)
 
-  safeValue = '0'
-  if not pd.isna(row['MobilePhone']) and not str(row['MobilePhone']).strip() == "":
-    safeValue = row['MobilePhone']
-
+  safeValue = ''
+  if not pd.isna(row['MobilePhone']) and not get_safe_string(str(row['MobilePhone'])) == '':
+    safeValue = get_safe_string(str(row['MobilePhone']))
+    mobile_phonenumber_json = '{type:{key:"MOBILE"} intlCode:1 number:"MOBILE_PHONENUMBER"}'
+    query = query.replace('MOBILE_PHONENUMBER', mobile_phonenumber_json)
+  
   query = query.replace('MOBILE_PHONENUMBER', safeValue)
 
   safeValue = ''
-  if not pd.isna(row['Birthdate']) and not str(row['Birthdate']).strip() == "":
+  if not pd.isna(row['Birthdate']) and not str(row['Birthdate']).strip() == '':
     safeValue = row['Birthdate']
 
   query = query.replace('BIRTHDAY_VALUE', safeValue)
 
   safeValue = ''
-  if not pd.isna(row['Gender__c']) and not str(row['Gender__c']).strip() == "":
+  if not pd.isna(row['Gender__c']) and not str(row['Gender__c']).strip() == '':
     safeValue = row['Gender__c'][0]
     
   if safeValue == '':
@@ -513,14 +535,14 @@ def update_row_client(record_type, record_mode, row, id_value):
     query = query.replace('GENDER_VALUE', safeValue)
      
   safeValue = '0'
-  if not pd.isna(row['No_of_Bookings__c']) and not str(row['No_of_Bookings__c']).strip() == "":
+  if not pd.isna(row['No_of_Bookings__c']) and not str(row['No_of_Bookings__c']).strip() == '':
     safeValue = round(row['No_of_Bookings__c'])
 
   query = query.replace('SAILED_VALUE', str(safeValue))
 
   safeValue = 'REGULAR'
   # Need to exactly map the Salesforce Passenger Type values to the Guest Type values in Seaware
-  #if not pd.isna(row['Passenger_Type__c']) and not str(row['Passenger_Type__c']).strip() == "":
+  #if not pd.isna(row['Passenger_Type__c']) and not str(row['Passenger_Type__c']).strip() == '':
   #  safeValue = round(row['Passenger_Type__c'])
 
   query = query.replace('GUESTTYPE_VALUE', str(safeValue))
@@ -542,6 +564,8 @@ def update_row_client(record_type, record_mode, row, id_value):
 #####################################################
 def insert_row_agent(record_type, record_mode, row):
    
+  print('insert_row_agent - ' + str(row['FirstName']).strip() + ' ' + str(row['LastName']))
+
   query = "Unknown"
   with open('C:/repo/seaware-sync/queries/insert_row_' + record_type.name.lower() + '.graphQL', 'r') as file:
     query = file.read()
@@ -550,7 +574,7 @@ def insert_row_agent(record_type, record_mode, row):
   query = query.replace('ALTID_VALUE', str(row['RepresentativeID__c']))
 
   safeValue = ''
-  if not pd.isna(row['FirstName']) and not str(row['FirstName']).strip() == "":
+  if not pd.isna(row['FirstName']) and not str(row['FirstName']).strip() == '':
     safeValue = row['FirstName']
 
   query = query.replace('FIRSTNAME_VALUE', safeValue)
@@ -573,6 +597,8 @@ def insert_row_agent(record_type, record_mode, row):
 #####################################################
 def update_row_agent(record_type, record_mode, row, id_value):
 
+  print('update_row_agent - ' + str(row['FirstName']).strip() + ' ' + str(row['LastName']))
+
   query = "Unknown"
   with open('C:/repo/seaware-sync/queries/update_row_' + record_type.name.lower() + '.graphQL', 'r') as file:
     query = file.read()
@@ -581,20 +607,20 @@ def update_row_agent(record_type, record_mode, row, id_value):
   query = query.replace('AGENTID_VALUE', id_value)
 
   safeValue = ''
-  if not pd.isna(row['FirstName']) and not str(row['FirstName']).strip() == "":
+  if not pd.isna(row['FirstName']) and not str(row['FirstName']).strip() == '':
     safeValue = row['FirstName']
 
   query = query.replace('FIRSTNAME_VALUE', safeValue)
   query = query.replace('LASTNAME_VALUE', str(row['LastName']))
 
   safeValue = ''
-  if not pd.isna(row['Email']) and not str(row['Email']).strip() == "":
+  if not pd.isna(row['Email']) and not str(row['Email']).strip() == '':
     safeValue = row['Email']
 
   query = query.replace('EMAIL_VALUE', safeValue)
 
   safeValue = ''
-  if not pd.isna(row['Account.Seaware_Id__c']) and not str(row['Account.Seaware_Id__c']).strip() == "":
+  if not pd.isna(row['Account.Seaware_Id__c']) and not str(row['Account.Seaware_Id__c']).strip() == '':
     safeValue = round(row['Account.Seaware_Id__c'])
 
   query = query.replace('AGENCYKEY_VALUE', str(safeValue))
@@ -615,7 +641,9 @@ def update_row_agent(record_type, record_mode, row, id_value):
 #
 #####################################################
 def insert_row_agency(record_type, record_mode, row):
-   
+
+  print('insert_row_agency - ' + str(row['Account.Name']))
+
   query = "Unknown"
   with open('C:/repo/seaware-sync/queries/insert_row_' + record_type.name.lower() + '.graphQL', 'r') as file:
     query = file.read()
@@ -641,6 +669,8 @@ def insert_row_agency(record_type, record_mode, row):
 #####################################################
 def update_row_agency(record_type, record_mode, row, id_value):
 
+  print('update_row_agency - ' + str(row['Account.Name']))
+
   # Check to ignore the UnCruise Agency 
   if 'UnCruise' in row['Account.Name']:
     return
@@ -656,7 +686,7 @@ def update_row_agency(record_type, record_mode, row, id_value):
 
   consortium = ''
   is_consortium = 'false'
-  if not pd.isna(row['Account.Consortium__c']) and not str(row['Account.Consortium__c']).strip() == "":
+  if not pd.isna(row['Account.Consortium__c']) and not str(row['Account.Consortium__c']).strip() == '':
     is_consortium = 'true'
     consortium = row['Account.Consortium__c']
 
@@ -664,7 +694,7 @@ def update_row_agency(record_type, record_mode, row, id_value):
   query = query.replace('ISCONORTIUM_VALUE', is_consortium)
 
   iata = ''
-  if not pd.isna(row['Account.IATA_Number__c']) and not str(row['Account.IATA_Number__c']).strip() == "":
+  if not pd.isna(row['Account.IATA_Number__c']) and not str(row['Account.IATA_Number__c']).strip() == '':
      iata = row['Account.IATA_Number__c']
 
   query = query.replace('IATA_VALUE', iata)
@@ -895,9 +925,8 @@ mutation login {
   }
 
   response = requests.post(url=GRAPHQL_URL, json={'query': query, 'variables': variables}, headers=headers) 
-  print("response status code: ", response.status_code) 
-  #if response.status_code == 200: 
-  #    print("response : ",response.content) 
+  if response.status_code != 200:
+    raise Exception(f"response failed: {response.status_code} {response.text}")
 
   # response.json() and json.loads(response.content) I think are equivalent methods to create a dictionary of json objects
   return response.json()
@@ -965,14 +994,14 @@ mutation login {
         # Columns: Id	Name	CustomerID__c	Seaware_Id__c	FirstName	LastName	Email	MiddleName	Title
 
         safeValue = ''
-        if not pd.isna(row['FirstName']) and not str(row['FirstName']).strip() == "":
+        if not pd.isna(row['FirstName']) and not str(row['FirstName']).strip() == '':
           safeValue = row['FirstName']
 
         query = query.replace('FIRSTNAME_VALUE', safeValue)
         query = query.replace('LASTNAME_VALUE', str(row['LastName']))
 
         safeValue = ''
-        if not pd.isna(row['Birthdate']) and not str(row['Birthdate']).strip() == "":
+        if not pd.isna(row['Birthdate']) and not str(row['Birthdate']).strip() == '':
           safeValue = row['Birthdate']
 
         query = query.replace('BIRTHDAY_VALUE', safeValue)
@@ -995,9 +1024,8 @@ mutation login {
   }
 
   response = requests.post(url=GRAPHQL_URL, json={'query': query, 'variables': variables}, headers=headers) 
-  print("response status code: ", response.status_code) 
-  #if response.status_code == 200: 
-  #    print("response : ",response.content) 
+  if response.status_code != 200:
+    raise Exception(f"response failed: {response.status_code} {response.text}")
 
   # response.json() and json.loads(response.content) I think are equivalent methods to create a dictionary of json objects
   return response.json()
@@ -1059,8 +1087,6 @@ def da_flatten_list(record_type, record_mode, json_list, access_token):
 
           if (should_process_record):
 
-            print('Processing ' + id_value + ' index: ' + str(index))
-
             # Update Paging on all Records until 255 paging Jira ticket fixed
             #update_record_paging(record_type, id_value, access_token)
 
@@ -1085,11 +1111,6 @@ def da_flatten_list(record_type, record_mode, json_list, access_token):
 
               print('Inserting ' + id_value + ' index: ' + str(index))
               #id_value = insert_record(record_type, id_value, access_token)
-
-            else:
-                
-                # Query Records
-                print('Querying ' + id_value + ' index: ' + str(index))
          
           flattened_item = flatten_json_lists(item)
 
@@ -1169,9 +1190,6 @@ def da_flatten_list_bookings(json_list, key, reservationKey):
               contact = item.get('node').get('contact')
               da_flatten_list_bookings(contact, filename, reservationKey)
 
-        else:
-            print(f"Skipping non-dict item in list '{key}': {item}")
-
   # Write to CSV file named after the key
   write_to_csv(csv_data, f"{key}.csv")
 
@@ -1213,7 +1231,8 @@ def flatten_json_results(y):
 
         # If it's a list, ignore
         elif type(x) is list:
-            print('Skipping list: ' + name)
+          no_action = True
+#            print('Skipping list: ' + name)
 
         else:
             
@@ -1246,7 +1265,7 @@ def write_to_csv(data, filename):
         for row in data:
             writer.writerow(row.values())
 
-    print(f"Written {full_filename}")
+#    print(f"Written {full_filename}")
 
 def check_csv(filename):
     

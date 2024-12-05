@@ -24,20 +24,11 @@ mutation updateRecord {
             key:"SAILED,SAILED_VALUE"
           }
         }
-        phones: [{
-          type: {
-            key: "PRIMARY"
-          }        
-          intlCode: 1
-          number: "PRIMARY_PHONENUMBER"
-        },
-        {
-          type: {
-            key: "MOBILE"
-          }        
-          intlCode: 1
-          number: "MOBILE_PHONENUMBER"
-        }]
+        phones: [
+          PRIMARY_PHONENUMBER
+          ,
+          MOBILE_PHONENUMBER
+          ]
       }
     }) {
     
