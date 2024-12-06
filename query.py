@@ -40,9 +40,9 @@ def main():
               "RecordType RecordMode\n")
       return
 
-  print("\nIncoming required parameters: " +
-          "RecordType: {} RecordMode: {} sys.argv {}\n"
-          .format(record_type_input, record_mode_input, sys.argv))
+  #print("\nIncoming required parameters: " +
+  #        "RecordType: {} RecordMode: {} sys.argv {}\n"
+  #        .format(record_type_input, record_mode_input, sys.argv))
 
   record_type = RecordType.RESERVATION
   if record_type_input == RecordType.AGENCY.name:
@@ -161,7 +161,7 @@ def process_salesforce_clients(record_type, record_mode):
       # Query to setup output file for processing in Excel PowerQuery update to SF
       json_res = process_seaware(record_type, RecordMode.QUERY, row)
 
-      if math.isnan(row['Seaware_Id__c']):
+      if row['Seaware_Id__c'] == None:
 
         # Check if record found in Seaware by Customer ID
         if len(json_res.get('data').get('clients').get('edges')) <= 0:
