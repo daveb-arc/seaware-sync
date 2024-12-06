@@ -3,7 +3,7 @@ mutation updateRecord {
   clientUpdate(
     input: {
       store: true
-      id: "Client|CLIENTID_VALUE"
+      id: "CLIENTID_VALUE"
       client:{
         altId: "ALTID_VALUE"
         firstName: "FIRSTNAME_VALUE"

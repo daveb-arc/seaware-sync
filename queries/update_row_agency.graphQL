@@ -2,7 +2,7 @@ mutation updateAgencyRecord {
   
   agencyUpdate(
     input: {
-      id: "Agency|AGENCYID_VALUE"
+      id: "AGENCYID_VALUE"
       agency:{
         name: "AGENCYNAME_VALUE"
         useDefaultConsortium: true        

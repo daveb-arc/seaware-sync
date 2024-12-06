@@ -2,7 +2,7 @@ mutation updateTravelAgentRecord {
   
   travelAgentUpdate(
     input: {
-      id: "TravelAgent|AGENTID_VALUE"
+      id: "AGENTID_VALUE"
       agent:{
         firstName: "FIRSTNAME_VALUE"
         lastName: "LASTNAME_VALUE"
@@ -13,7 +13,7 @@ mutation updateTravelAgentRecord {
         canAccessAgencyData: false
         agencyLink: {
             agency: {
-                key: "AGENCYKEY_VALUE"
+                id: "AGENCYKEY_VALUE"
             }
             dateRange: {
                 from: "2024-01-01"

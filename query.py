@@ -178,11 +178,11 @@ def process_salesforce_clients(record_type, record_mode):
           # Query to setup output file for processing in Excel PowerQuery update to SF
           json_res = process_seaware(record_type, RecordMode.QUERY, row)
 
-        id_value = json_res.get('data').get('clients').get('edges')[0].get('node').get('key')
+        id_value = json_res.get('data').get('clients').get('edges')[0].get('node').get('id')
 
       else:
           
-        id_value = str(int(id_value))
+        id_value = str(id_value)
 
       # Update Request for complete field updates
       update_row_client(record_type, RecordMode.UPDATE, row, id_value)
@@ -215,7 +215,7 @@ def process_salesforce_agents(record_type, record_mode):
         # Query to setup output file for processing in Excel PowerQuery update to SF
         json_res = process_seaware(record_type, RecordMode.QUERY, row)
 
-      id_value = json_res.get('data').get('travelAgents').get('edges')[0].get('node').get('key')
+      id_value = json_res.get('data').get('travelAgents').get('edges')[0].get('node').get('id')
 
       # Update Request for complete field updates
       update_row_agent(record_type, RecordMode.UPDATE, row, id_value)
@@ -248,7 +248,7 @@ def process_salesforce_agencies(record_type, record_mode):
         # Query to setup output file for processing in Excel PowerQuery update to SF
         json_res = process_seaware(record_type, RecordMode.QUERY, row)
 
-      id_value = json_res.get('data').get('agencies').get('edges')[0].get('node').get('key')
+      id_value = json_res.get('data').get('agencies').get('edges')[0].get('node').get('id')
 
       # Update Request for complete field updates
       update_row_agency(record_type, RecordMode.UPDATE, row, id_value)
@@ -468,8 +468,15 @@ def insert_row_client(record_type, record_mode, row):
 
   response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
   if response.status_code != 200:
-    raise Exception(f"Login failed: {response.status_code} {response.text}")
+    raise Exception(f"insert_row_client: {response.status_code} {response.text}")
   
+  # Check for errors
+  data = response.json()
+  if 'errors' in data:
+    error_log = data['errors']
+    print(error_log[0].get('message'))
+    raise Exception(f"insert_row_client: {error_log[0].get('message')}")
+
   logout_graphql()
     
   return response
@@ -552,7 +559,14 @@ def update_row_client(record_type, record_mode, row, id_value):
 
   response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
   if response.status_code != 200:
-    raise Exception(f"Login failed: {response.status_code} {response.text}")
+    raise Exception(f"update_row_client: {response.status_code} {response.text}")
+
+  # Check for errors
+  data = response.json()
+  if 'errors' in data:
+    error_log = data['errors']
+    print(error_log[0].get('message'))
+    raise Exception(f"update_row_client: {error_log[0].get('message')}")
 
   logout_graphql()
 
@@ -585,7 +599,14 @@ def insert_row_agent(record_type, record_mode, row):
 
   response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
   if response.status_code != 200:
-    raise Exception(f"Login failed: {response.status_code} {response.text}")
+    raise Exception(f"insert_row_agent: {response.status_code} {response.text}")
+
+  # Check for errors
+  data = response.json()
+  if 'errors' in data:
+    error_log = data['errors']
+    print(error_log[0].get('message'))
+    raise Exception(f"insert_row_agent: {error_log[0].get('message')}")
 
   logout_graphql()
 
@@ -630,7 +651,14 @@ def update_row_agent(record_type, record_mode, row, id_value):
 
   response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
   if response.status_code != 200:
-    raise Exception(f"Login failed: {response.status_code} {response.text}")
+    raise Exception(f"update_row_agent: {response.status_code} {response.text}")
+
+  # Check for errors
+  data = response.json()
+  if 'errors' in data:
+    error_log = data['errors']
+    print(error_log[0].get('message'))
+    raise Exception(f"update_row_agent: {error_log[0].get('message')}")
 
   logout_graphql()
 
@@ -657,7 +685,14 @@ def insert_row_agency(record_type, record_mode, row):
 
   response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
   if response.status_code != 200:
-    raise Exception(f"Login failed: {response.status_code} {response.text}")
+    raise Exception(f"insert_row_agency: {response.status_code} {response.text}")
+
+  # Check for errors
+  data = response.json()
+  if 'errors' in data:
+    error_log = data['errors']
+    print(error_log[0].get('message'))
+    raise Exception(f"insert_row_agency: {error_log[0].get('message')}")
 
   logout_graphql()
 
@@ -704,7 +739,14 @@ def update_row_agency(record_type, record_mode, row, id_value):
 
   response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
   if response.status_code != 200:
-    raise Exception(f"Login failed: {response.status_code} {response.text}")
+    raise Exception(f"update_row_agency: {response.status_code} {response.text}")
+
+  # Check for errors
+  data = response.json()
+  if 'errors' in data:
+    error_log = data['errors']
+    print(error_log[0].get('message'))
+    raise Exception(f"update_row_agency: {error_log[0].get('message')}")
 
   logout_graphql()
 
