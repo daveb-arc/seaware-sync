@@ -78,8 +78,6 @@ def main():
 
     process_seaware(record_type, record_mode)
 
-  logout_graphql()
-
   exit
 
 #####################################################
@@ -106,7 +104,8 @@ mutation login {
     data = response.json()
     token = data['data']['login']['token']
   else:
-    raise Exception(f"Login failed: {response.status_code} {response.text}")
+    print(f"login_graphql: {response.status_code} {response.text}")
+    #raise Exception(f"login_graphql: {response.status_code} {response.text}")
     
   headers = {
     'Authorization': f'Bearer {token}'
@@ -117,9 +116,11 @@ mutation login {
 #####################################################
 #
 # login_graphql - 
+#   (Authorization: Bearer xxx HTTP header) token on the logout mutation needs to match the header received on the login
+#   Logout operation should be dropping all the session locks by design
 #
 #####################################################
-def logout_graphql():
+def logout_graphql(headers):
    
   logout = """
 mutation logout {
@@ -128,10 +129,11 @@ mutation logout {
 }
 """
 
-  response = requests.post(url=GRAPHQL_URL, json={"query": logout}) 
+  response = requests.post(url=GRAPHQL_URL, json={"query": logout}, headers=headers) 
 
   if response.status_code != 200:
-    raise Exception(f"Logout failed: {response.status_code} {response.text}")
+    print(f"logout_graphql: {response.status_code} {response.text}")
+    #raise Exception(f"logout_graphql failed: {response.status_code} {response.text}")
     
 #####################################################
 #
@@ -161,7 +163,8 @@ def process_salesforce_clients(record_type, record_mode):
       # Query to setup output file for processing in Excel PowerQuery update to SF
       json_res = process_seaware(record_type, RecordMode.QUERY, row)
 
-      if row['Seaware_Id__c'] == None or math.isnan(row['Seaware_Id__c']):
+      # Check for None or len less than 8 (nan is len 3)
+      if row['Seaware_Id__c'] == None or len(str(row['Seaware_Id__c'])) <= 8:
 
         # Check if record found in Seaware by Customer ID
         if len(json_res.get('data').get('clients').get('edges')) <= 0:
@@ -264,8 +267,10 @@ def process_seaware(record_type, record_mode, row = None):
   elif record_type == RecordType.AGENCY:
     record_type_value = 'agencies'
 
+  headers = login_graphql()
+
   # Initial request - no cursor
-  json_res = fetch_items(record_type, record_mode, row)
+  json_res = fetch_items(record_type, record_mode, headers, row)
   page_info = None
 
   if record_type_value in json_res['data']: 
@@ -274,7 +279,6 @@ def process_seaware(record_type, record_mode, row = None):
 
   else:
     print("unknown response type")
-    logout_graphql()
     return json_res
 
   # Check for next page - max query is total of 500 regardless of the paging request size
@@ -283,7 +287,7 @@ def process_seaware(record_type, record_mode, row = None):
     
     cursor = page_info['endCursor']
     access_token = json_res['extensions']['access_token']
-    json_res = fetch_items(record_type, record_mode, row, cursor, access_token) 
+    json_res = fetch_items(record_type, record_mode, headers, row, cursor, access_token) 
 
     # Max query is 500 so if deleting or paging update then just restart the query
     #json_res = fetch_items(record_type, record_mode, row) 
@@ -298,7 +302,7 @@ def process_seaware(record_type, record_mode, row = None):
     else:
       print("unknown query type")       
 
-  logout_graphql()
+  logout_graphql(headers)
 
   return json_res
 
@@ -313,8 +317,10 @@ def process_seaware_bylookup(record_type, record_mode, row = None):
   elif record_type == RecordType.AGENCY:
     record_type_value = 'agencies'
 
+  headers = login_graphql()
+
   # Initial request - no cursor
-  json_res = fetch_items_bylookup(record_type, record_mode, row)
+  json_res = fetch_items_bylookup(record_type, record_mode, headers, row)
   page_info = None
 
   if record_type_value in json_res['data']: 
@@ -323,7 +329,6 @@ def process_seaware_bylookup(record_type, record_mode, row = None):
 
   else:
     print("unknown response type")
-    logout_graphql()
     return json_res
 
   # Check for next page - max query is total of 500 regardless of the paging request size
@@ -332,7 +337,7 @@ def process_seaware_bylookup(record_type, record_mode, row = None):
     
     cursor = page_info['endCursor']
     access_token = json_res['extensions']['access_token']
-    json_res = fetch_items_bylookup(record_type, record_mode, row, cursor, access_token) 
+    json_res = fetch_items_bylookup(record_type, record_mode, headers, row, cursor, access_token) 
 
     # Max query is 500 so if deleting or paging update then just restart the query
     #json_res = fetch_items(record_type, record_mode, row) 
@@ -347,8 +352,8 @@ def process_seaware_bylookup(record_type, record_mode, row = None):
     else:
       print("unknown query type")       
 
-  logout_graphql()
-  
+  logout_graphql(headers)
+
   return json_res
 
 #####################################################
@@ -393,7 +398,8 @@ def update_record_paging(record_type, id_value, access_token):
   response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
   
   if response.status_code != 200:
-    raise Exception(f"Login failed: {response.status_code} {response.text}")
+    print(f"update_record_paging: {response.status_code} {response.text}")
+    #raise Exception(f"update_record_paging: {response.status_code} {response.text}")
   
   elif not '"operationResult":"OK"' in response.text:
      
@@ -468,16 +474,17 @@ def insert_row_client(record_type, record_mode, row):
 
   response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
   if response.status_code != 200:
-    raise Exception(f"insert_row_client: {response.status_code} {response.text}")
+    print(f"insert_row_client: {response.status_code} {response.text}")
+    #raise Exception(f"insert_row_client: {response.status_code} {response.text}")
   
   # Check for errors
   data = response.json()
   if 'errors' in data:
     error_log = data['errors']
     print(error_log[0].get('message'))
-    raise Exception(f"insert_row_client: {error_log[0].get('message')}")
+    #raise Exception(f"insert_row_client: {error_log[0].get('message')}")
 
-  logout_graphql()
+  logout_graphql(headers)
     
   return response
 
@@ -559,16 +566,17 @@ def update_row_client(record_type, record_mode, row, id_value):
 
   response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
   if response.status_code != 200:
-    raise Exception(f"update_row_client: {response.status_code} {response.text}")
+    print(f"update_row_client: {response.status_code} {response.text}")
+    #raise Exception(f"update_row_client: {response.status_code} {response.text}")
 
   # Check for errors
   data = response.json()
   if 'errors' in data:
     error_log = data['errors']
     print(error_log[0].get('message'))
-    raise Exception(f"update_row_client: {error_log[0].get('message')}")
+    #raise Exception(f"update_row_client: {error_log[0].get('message')}")
 
-  logout_graphql()
+  logout_graphql(headers)
 
   return response
 
@@ -599,16 +607,17 @@ def insert_row_agent(record_type, record_mode, row):
 
   response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
   if response.status_code != 200:
-    raise Exception(f"insert_row_agent: {response.status_code} {response.text}")
+    print(f"insert_row_agent: {response.status_code} {response.text}")
+    #raise Exception(f"insert_row_agent: {response.status_code} {response.text}")
 
   # Check for errors
   data = response.json()
   if 'errors' in data:
     error_log = data['errors']
     print(error_log[0].get('message'))
-    raise Exception(f"insert_row_agent: {error_log[0].get('message')}")
+    #raise Exception(f"insert_row_agent: {error_log[0].get('message')}")
 
-  logout_graphql()
+  logout_graphql(headers)
 
   return response
 
@@ -651,16 +660,17 @@ def update_row_agent(record_type, record_mode, row, id_value):
 
   response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
   if response.status_code != 200:
-    raise Exception(f"update_row_agent: {response.status_code} {response.text}")
+    print(f"update_row_agent: {response.status_code} {response.text}")
+    #raise Exception(f"update_row_agent: {response.status_code} {response.text}")
 
   # Check for errors
   data = response.json()
   if 'errors' in data:
     error_log = data['errors']
     print(error_log[0].get('message'))
-    raise Exception(f"update_row_agent: {error_log[0].get('message')}")
+    #raise Exception(f"update_row_agent: {error_log[0].get('message')}")
 
-  logout_graphql()
+  logout_graphql(headers)
 
   return response
 
@@ -685,16 +695,17 @@ def insert_row_agency(record_type, record_mode, row):
 
   response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
   if response.status_code != 200:
-    raise Exception(f"insert_row_agency: {response.status_code} {response.text}")
+    print(f"insert_row_agency: {response.status_code} {response.text}")
+    #raise Exception(f"insert_row_agency: {response.status_code} {response.text}")
 
   # Check for errors
   data = response.json()
   if 'errors' in data:
     error_log = data['errors']
     print(error_log[0].get('message'))
-    raise Exception(f"insert_row_agency: {error_log[0].get('message')}")
+    #raise Exception(f"insert_row_agency: {error_log[0].get('message')}")
 
-  logout_graphql()
+  logout_graphql(headers)
 
   return response
 
@@ -739,16 +750,17 @@ def update_row_agency(record_type, record_mode, row, id_value):
 
   response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
   if response.status_code != 200:
-    raise Exception(f"update_row_agency: {response.status_code} {response.text}")
+    print(f"update_row_agency: {response.status_code} {response.text}")
+    #raise Exception(f"update_row_agency: {response.status_code} {response.text}")
 
   # Check for errors
   data = response.json()
   if 'errors' in data:
     error_log = data['errors']
     print(error_log[0].get('message'))
-    raise Exception(f"update_row_agency: {error_log[0].get('message')}")
+    #raise Exception(f"update_row_agency: {error_log[0].get('message')}")
 
-  logout_graphql()
+  logout_graphql(headers)
 
   return response
 
@@ -772,7 +784,8 @@ def update_record(record_type, id_value, access_token):
   response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
   
   if response.status_code != 200:
-    raise Exception(f"Login failed: {response.status_code} {response.text}")
+    print(f"update_record: {response.status_code} {response.text}")
+    #raise Exception(f"update_record: {response.status_code} {response.text}")
   
   elif not '"operationResult":"OK"' in response.text:
      
@@ -824,7 +837,8 @@ mutation deleteRecord {
   response = requests.post(url=GRAPHQL_URL, json={"query": graphql_query}, headers=headers) 
   
   if response.status_code != 200:
-    raise Exception(f"Login failed: {response.status_code} {response.text}")
+    print(f"delete_record: {response.status_code} {response.text}")
+    #raise Exception(f"delete_record: {response.status_code} {response.text}")
   
   elif not '"operationResult":"OK"' in response.text:
      
@@ -876,7 +890,8 @@ mutation createRecord {
   response = requests.post(url=GRAPHQL_URL, json={"query": graphql_query}, headers=headers) 
   
   if response.status_code != 200:
-    raise Exception(f"Login failed: {response.status_code} {response.text}")
+    print(f"create_record: {response.status_code} {response.text}")
+    #raise Exception(f"create_record: {response.status_code} {response.text}")
   
   elif not '"operationResult":"OK"' in response.text:
      
@@ -892,35 +907,8 @@ mutation createRecord {
 # fetch_items - responsible for initial page and additional page results based on cursor
 #
 #####################################################
-def fetch_items(record_type, record_mode, row = None, cursor = None, access_token = None):
+def fetch_items(record_type, record_mode, headers, row = None, cursor = None, access_token = None):
    
-  login = """
-mutation login {
-
-  login(role:Internal ) {
-    token
-  }
-}
-"""
-
-  token = access_token
-
-  if cursor == None:
-    
-    #login to get token
-    #response = requests.post(url=GRAPHQL_URL, json={'query': query, 'variables': variables})
-    response = requests.post(url=GRAPHQL_URL, json={"query": login}) 
-  
-    if response.status_code == 200:
-      data = response.json()
-      token = data['data']['login']['token']
-    else:
-      raise Exception(f"Login failed: {response.status_code} {response.text}")
-    
-  headers = {
-    'Authorization': f'Bearer {token}'
-  }
-
   input_query = 'Reservations'
   if record_type == RecordType.CLIENT:
      
@@ -969,7 +957,8 @@ mutation login {
 
   response = requests.post(url=GRAPHQL_URL, json={'query': query, 'variables': variables}, headers=headers) 
   if response.status_code != 200:
-    raise Exception(f"response failed: {response.status_code} {response.text}")
+    print(f"fetch_items: {response.status_code} {response.text}")
+    #raise Exception(f"response failed: {response.status_code} {response.text}")
 
   # response.json() and json.loads(response.content) I think are equivalent methods to create a dictionary of json objects
   return response.json()
@@ -979,35 +968,8 @@ mutation login {
 # fetch_items_bylookup - responsible for initial page and additional page results based on cursor
 #
 #####################################################
-def fetch_items_bylookup(record_type, record_mode, row = None, cursor = None, access_token = None):
+def fetch_items_bylookup(record_type, record_mode, headers, row = None, cursor = None, access_token = None):
    
-  login = """
-mutation login {
-
-  login(role:Internal ) {
-    token
-  }
-}
-"""
-
-  token = access_token
-
-  if cursor == None:
-    
-    #login to get token
-    #response = requests.post(url=GRAPHQL_URL, json={'query': query, 'variables': variables})
-    response = requests.post(url=GRAPHQL_URL, json={"query": login}) 
-  
-    if response.status_code == 200:
-      data = response.json()
-      token = data['data']['login']['token']
-    else:
-      raise Exception(f"Login failed: {response.status_code} {response.text}")
-    
-  headers = {
-    'Authorization': f'Bearer {token}'
-  }
-
   input_query = 'Reservations'
   if record_type == RecordType.CLIENT:
      
@@ -1068,7 +1030,8 @@ mutation login {
 
   response = requests.post(url=GRAPHQL_URL, json={'query': query, 'variables': variables}, headers=headers) 
   if response.status_code != 200:
-    raise Exception(f"response failed: {response.status_code} {response.text}")
+    print(f"fetch_items_bylookup: {response.status_code} {response.text}")
+    #raise Exception(f"response failed: {response.status_code} {response.text}")
 
   # response.json() and json.loads(response.content) I think are equivalent methods to create a dictionary of json objects
   return response.json()
