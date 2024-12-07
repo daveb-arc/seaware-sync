@@ -652,7 +652,11 @@ def update_row_agent(record_type, record_mode, row, id_value):
 
   safeValue = ''
   if not pd.isna(row['Account.Seaware_Id__c']) and not str(row['Account.Seaware_Id__c']).strip() == '':
-    safeValue = round(row['Account.Seaware_Id__c'])
+    safeValue = str(row['Account.Seaware_Id__c'])
+  else:
+    print('Agency missing Seaware Id so skipping Agent')
+    # No Agency Seaware Id so kick out and wait for one
+    return
 
   query = query.replace('AGENCYKEY_VALUE', str(safeValue))
 
@@ -742,7 +746,7 @@ def update_row_agency(record_type, record_mode, row, id_value):
 
   iata = ''
   if not pd.isna(row['Account.IATA_Number__c']) and not str(row['Account.IATA_Number__c']).strip() == '':
-     iata = row['Account.IATA_Number__c']
+     iata = str(row['Account.IATA_Number__c'])
 
   query = query.replace('IATA_VALUE', iata)
 
