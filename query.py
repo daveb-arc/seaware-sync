@@ -36,11 +36,11 @@ def main():
   record_mode_input = str(sys.argv[2])
 
   if len(sys.argv) < 3:
-      print("Calling error - missing required inputs.  Expecting " +
+      print_log("Calling error - missing required inputs.  Expecting " +
               "RecordType RecordMode\n")
       return
 
-  #print("\nIncoming required parameters: " +
+  #print_log("\nIncoming required parameters: " +
   #        "RecordType: {} RecordMode: {} sys.argv {}\n"
   #        .format(record_type_input, record_mode_input, sys.argv))
 
@@ -82,6 +82,47 @@ def main():
 
 #####################################################
 #
+# get_csv_dataframe - 
+#
+#####################################################
+def get_csv_dataframe(full_filename):
+
+  fileCheckPath = Path(full_filename)
+  fileCheckExists = fileCheckPath.is_file()
+  if not fileCheckExists:
+     return []
+  
+  if os.path.exists(full_filename) and os.path.getsize(full_filename) > 0:
+    try:
+      data_frame = pd.read_csv(full_filename)
+
+      # Check if the DataFrame has columns
+      if not data_frame.empty:
+       return data_frame
+        
+    except pd.errors.EmptyDataError:
+        print_log(f"Error: The file {full_filename} is empty or doesn't contain valid data.")
+
+    except Exception as e:
+        print_log(f"An error occurred: {e}")
+
+  return []
+
+#####################################################
+#
+# login_graphql - 
+#
+#####################################################
+def print_log(log_message):
+  
+  import datetime
+
+  current_datetime = datetime.datetime.now()
+  formatted_datetime = current_datetime.strftime("%Y-%m-%d %H:%M:%S")
+  print(formatted_datetime + ' : ' + log_message)
+
+#####################################################
+#
 # login_graphql - 
 #
 #####################################################
@@ -104,7 +145,7 @@ mutation login {
     data = response.json()
     token = data['data']['login']['token']
   else:
-    print(f"login_graphql: {response.status_code} {response.text}")
+    print_log(f"login_graphql: {response.status_code} {response.text}")
     #raise Exception(f"login_graphql: {response.status_code} {response.text}")
     
   headers = {
@@ -132,7 +173,7 @@ mutation logout {
   response = requests.post(url=GRAPHQL_URL, json={"query": logout}, headers=headers) 
 
   if response.status_code != 200:
-    print(f"logout_graphql: {response.status_code} {response.text}")
+    print_log(f"logout_graphql: {response.status_code} {response.text}")
     #raise Exception(f"logout_graphql failed: {response.status_code} {response.text}")
     
 #####################################################
@@ -146,13 +187,11 @@ def process_salesforce_clients(record_type, record_mode):
   import math
 
   full_filename = 'C:/repo/Salesforce-Exporter-Private/Clients/SEAWARE/Salesforce-Exporter/Clients/SEAWARE/Export/Contact-Prod.csv'
-  fileCheckPath = Path(full_filename)
-  fileCheckExists = fileCheckPath.is_file()
-  if not fileCheckExists:
-     return
-  
-  data_frame = pd.read_csv(full_filename)
 
+  data_frame = get_csv_dataframe(full_filename)
+  if len(data_frame) <= 0:
+    return
+  
   for index, row in data_frame.iterrows():
 
       if row['Contact_Type__c'] != 'Guest':
@@ -200,8 +239,10 @@ def process_salesforce_agents(record_type, record_mode):
   if not fileCheckExists:
      return
 
-  data_frame = pd.read_csv(full_filename)
-
+  data_frame = get_csv_dataframe(full_filename)
+  if len(data_frame) <= 0:
+    return
+  
   for index, row in data_frame.iterrows():
 
       if row['Contact_Type__c'] != 'Representative':
@@ -233,7 +274,9 @@ def process_salesforce_agencies(record_type, record_mode):
   if not fileCheckExists:
      return
 
-  data_frame = pd.read_csv(full_filename)
+  data_frame = get_csv_dataframe(full_filename)
+  if len(data_frame) <= 0:
+    return
 
   for index, row in data_frame.iterrows():
 
@@ -278,7 +321,7 @@ def process_seaware(record_type, record_mode, row = None):
     page_info = json_res['data'][record_type_value]['pageInfo']
 
   else:
-    print("unknown response type")
+    print_log("unknown response type")
     return json_res
 
   # Check for next page - max query is total of 500 regardless of the paging request size
@@ -293,14 +336,14 @@ def process_seaware(record_type, record_mode, row = None):
     #json_res = fetch_items(record_type, record_mode, row) 
 
     incoming_items = len(json_res.get('data').get(record_type_value).get('edges'))
-    print("cursor: " + cursor + " access_token: " + access_token + " incoming_items: " + str(incoming_items))        
+    print_log("cursor: " + cursor + " access_token: " + access_token + " incoming_items: " + str(incoming_items))        
       
     if record_type_value in json_res['data']: 
       process_record(record_type, record_type_value, record_mode, json_res)
       page_info = json_res['data'][record_type_value]['pageInfo']
 
     else:
-      print("unknown query type")       
+      print_log("unknown query type")       
 
   logout_graphql(headers)
 
@@ -328,7 +371,7 @@ def process_seaware_bylookup(record_type, record_mode, row = None):
     page_info = json_res['data'][record_type_value]['pageInfo']
 
   else:
-    print("unknown response type")
+    print_log("unknown response type")
     return json_res
 
   # Check for next page - max query is total of 500 regardless of the paging request size
@@ -343,14 +386,14 @@ def process_seaware_bylookup(record_type, record_mode, row = None):
     #json_res = fetch_items(record_type, record_mode, row) 
 
     incoming_items = len(json_res.get('data').get(record_type_value).get('edges'))
-    print("cursor: " + cursor + " access_token: " + access_token + " incoming_items: " + str(incoming_items))        
+    print_log("cursor: " + cursor + " access_token: " + access_token + " incoming_items: " + str(incoming_items))        
       
     if record_type_value in json_res['data']: 
       process_record(record_type, record_type_value, record_mode, json_res)
       page_info = json_res['data'][record_type_value]['pageInfo']
 
     else:
-      print("unknown query type")       
+      print_log("unknown query type")       
 
   logout_graphql(headers)
 
@@ -398,12 +441,12 @@ def update_record_paging(record_type, id_value, access_token):
   response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
   
   if response.status_code != 200:
-    print(f"update_record_paging: {response.status_code} {response.text}")
+    print_log(f"update_record_paging: {response.status_code} {response.text}")
     #raise Exception(f"update_record_paging: {response.status_code} {response.text}")
   
   elif not '"operationResult":"OK"' in response.text:
      
-     print(response.text)
+     print_log(response.text)
 
      # Add Id to skip queue
      return id_value
@@ -417,7 +460,7 @@ def update_record_paging(record_type, id_value, access_token):
 #####################################################
 def insert_row_client(record_type, record_mode, row):
 
-  print('insert_row_client - ' + str(row['FirstName']).strip() + ' ' + str(row['LastName']))
+  print_log('insert_row_client - ' + str(row['FirstName']).strip() + ' ' + str(row['LastName']))
 
   query = "Unknown"
   with open('C:/repo/seaware-sync/queries/insert_row_' + record_type.name.lower() + '.graphQL', 'r') as file:
@@ -474,14 +517,14 @@ def insert_row_client(record_type, record_mode, row):
 
   response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
   if response.status_code != 200:
-    print(f"insert_row_client: {response.status_code} {response.text}")
+    print_log(f"insert_row_client: {response.status_code} {response.text}")
     #raise Exception(f"insert_row_client: {response.status_code} {response.text}")
   
   # Check for errors
   data = response.json()
   if 'errors' in data:
     error_log = data['errors']
-    print(error_log[0].get('message'))
+    print_log(error_log[0].get('message'))
     #raise Exception(f"insert_row_client: {error_log[0].get('message')}")
 
   logout_graphql(headers)
@@ -495,7 +538,7 @@ def insert_row_client(record_type, record_mode, row):
 #####################################################
 def update_row_client(record_type, record_mode, row, id_value):
 
-  print('update_row_client - ' + str(row['FirstName']).strip() + ' ' + str(row['LastName']))
+  print_log('update_row_client - ' + str(row['FirstName']).strip() + ' ' + str(row['LastName']))
 
   query = "Unknown"
   with open('C:/repo/seaware-sync/queries/update_row_' + record_type.name.lower() + '.graphQL', 'r') as file:
@@ -566,14 +609,14 @@ def update_row_client(record_type, record_mode, row, id_value):
 
   response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
   if response.status_code != 200:
-    print(f"update_row_client: {response.status_code} {response.text}")
+    print_log(f"update_row_client: {response.status_code} {response.text}")
     #raise Exception(f"update_row_client: {response.status_code} {response.text}")
 
   # Check for errors
   data = response.json()
   if 'errors' in data:
     error_log = data['errors']
-    print(error_log[0].get('message'))
+    print_log(error_log[0].get('message'))
     #raise Exception(f"update_row_client: {error_log[0].get('message')}")
 
   logout_graphql(headers)
@@ -587,7 +630,7 @@ def update_row_client(record_type, record_mode, row, id_value):
 #####################################################
 def insert_row_agent(record_type, record_mode, row):
    
-  print('insert_row_agent - ' + str(row['FirstName']).strip() + ' ' + str(row['LastName']))
+  print_log('insert_row_agent - ' + str(row['FirstName']).strip() + ' ' + str(row['LastName']))
 
   query = "Unknown"
   with open('C:/repo/seaware-sync/queries/insert_row_' + record_type.name.lower() + '.graphQL', 'r') as file:
@@ -607,14 +650,14 @@ def insert_row_agent(record_type, record_mode, row):
 
   response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
   if response.status_code != 200:
-    print(f"insert_row_agent: {response.status_code} {response.text}")
+    print_log(f"insert_row_agent: {response.status_code} {response.text}")
     #raise Exception(f"insert_row_agent: {response.status_code} {response.text}")
 
   # Check for errors
   data = response.json()
   if 'errors' in data:
     error_log = data['errors']
-    print(error_log[0].get('message'))
+    print_log(error_log[0].get('message'))
     #raise Exception(f"insert_row_agent: {error_log[0].get('message')}")
 
   logout_graphql(headers)
@@ -628,7 +671,7 @@ def insert_row_agent(record_type, record_mode, row):
 #####################################################
 def update_row_agent(record_type, record_mode, row, id_value):
 
-  print('update_row_agent - ' + str(row['FirstName']).strip() + ' ' + str(row['LastName']))
+  print_log('update_row_agent - ' + str(row['FirstName']).strip() + ' ' + str(row['LastName']))
 
   query = "Unknown"
   with open('C:/repo/seaware-sync/queries/update_row_' + record_type.name.lower() + '.graphQL', 'r') as file:
@@ -654,7 +697,7 @@ def update_row_agent(record_type, record_mode, row, id_value):
   if not pd.isna(row['Account.Seaware_Id__c']) and not str(row['Account.Seaware_Id__c']).strip() == '':
     safeValue = str(row['Account.Seaware_Id__c'])
   else:
-    print('Agency missing Seaware Id so skipping Agent')
+    print_log('Agency missing Seaware Id so skipping Agent')
     # No Agency Seaware Id so kick out and wait for one
     return
 
@@ -664,14 +707,14 @@ def update_row_agent(record_type, record_mode, row, id_value):
 
   response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
   if response.status_code != 200:
-    print(f"update_row_agent: {response.status_code} {response.text}")
+    print_log(f"update_row_agent: {response.status_code} {response.text}")
     #raise Exception(f"update_row_agent: {response.status_code} {response.text}")
 
   # Check for errors
   data = response.json()
   if 'errors' in data:
     error_log = data['errors']
-    print(error_log[0].get('message'))
+    print_log(error_log[0].get('message'))
     #raise Exception(f"update_row_agent: {error_log[0].get('message')}")
 
   logout_graphql(headers)
@@ -685,7 +728,7 @@ def update_row_agent(record_type, record_mode, row, id_value):
 #####################################################
 def insert_row_agency(record_type, record_mode, row):
 
-  print('insert_row_agency - ' + str(row['Account.Name']))
+  print_log('insert_row_agency - ' + str(row['Account.Name']))
 
   query = "Unknown"
   with open('C:/repo/seaware-sync/queries/insert_row_' + record_type.name.lower() + '.graphQL', 'r') as file:
@@ -699,14 +742,14 @@ def insert_row_agency(record_type, record_mode, row):
 
   response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
   if response.status_code != 200:
-    print(f"insert_row_agency: {response.status_code} {response.text}")
+    print_log(f"insert_row_agency: {response.status_code} {response.text}")
     #raise Exception(f"insert_row_agency: {response.status_code} {response.text}")
 
   # Check for errors
   data = response.json()
   if 'errors' in data:
     error_log = data['errors']
-    print(error_log[0].get('message'))
+    print_log(error_log[0].get('message'))
     #raise Exception(f"insert_row_agency: {error_log[0].get('message')}")
 
   logout_graphql(headers)
@@ -720,7 +763,7 @@ def insert_row_agency(record_type, record_mode, row):
 #####################################################
 def update_row_agency(record_type, record_mode, row, id_value):
 
-  print('update_row_agency - ' + str(row['Account.Name']))
+  print_log('update_row_agency - ' + str(row['Account.Name']))
 
   # Check to ignore the UnCruise Agency 
   if 'UnCruise' in row['Account.Name']:
@@ -754,14 +797,14 @@ def update_row_agency(record_type, record_mode, row, id_value):
 
   response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
   if response.status_code != 200:
-    print(f"update_row_agency: {response.status_code} {response.text}")
+    print_log(f"update_row_agency: {response.status_code} {response.text}")
     #raise Exception(f"update_row_agency: {response.status_code} {response.text}")
 
   # Check for errors
   data = response.json()
   if 'errors' in data:
     error_log = data['errors']
-    print(error_log[0].get('message'))
+    print_log(error_log[0].get('message'))
     #raise Exception(f"update_row_agency: {error_log[0].get('message')}")
 
   logout_graphql(headers)
@@ -788,12 +831,12 @@ def update_record(record_type, id_value, access_token):
   response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
   
   if response.status_code != 200:
-    print(f"update_record: {response.status_code} {response.text}")
+    print_log(f"update_record: {response.status_code} {response.text}")
     #raise Exception(f"update_record: {response.status_code} {response.text}")
   
   elif not '"operationResult":"OK"' in response.text:
      
-     print(response.text)
+     print_log(response.text)
 
      # Add Id to skip queue
      return id_value
@@ -841,12 +884,12 @@ mutation deleteRecord {
   response = requests.post(url=GRAPHQL_URL, json={"query": graphql_query}, headers=headers) 
   
   if response.status_code != 200:
-    print(f"delete_record: {response.status_code} {response.text}")
+    print_log(f"delete_record: {response.status_code} {response.text}")
     #raise Exception(f"delete_record: {response.status_code} {response.text}")
   
   elif not '"operationResult":"OK"' in response.text:
      
-     print(response.text)
+     print_log(response.text)
 
      # Add Id to skip queue
      return id_value
@@ -894,12 +937,12 @@ mutation createRecord {
   response = requests.post(url=GRAPHQL_URL, json={"query": graphql_query}, headers=headers) 
   
   if response.status_code != 200:
-    print(f"create_record: {response.status_code} {response.text}")
+    print_log(f"create_record: {response.status_code} {response.text}")
     #raise Exception(f"create_record: {response.status_code} {response.text}")
   
   elif not '"operationResult":"OK"' in response.text:
      
-     print(response.text)
+     print_log(response.text)
 
      # Add Id to skip queue
      return id_value
@@ -961,7 +1004,7 @@ def fetch_items(record_type, record_mode, headers, row = None, cursor = None, ac
 
   response = requests.post(url=GRAPHQL_URL, json={'query': query, 'variables': variables}, headers=headers) 
   if response.status_code != 200:
-    print(f"fetch_items: {response.status_code} {response.text}")
+    print_log(f"fetch_items: {response.status_code} {response.text}")
     #raise Exception(f"response failed: {response.status_code} {response.text}")
 
   # response.json() and json.loads(response.content) I think are equivalent methods to create a dictionary of json objects
@@ -1034,7 +1077,7 @@ def fetch_items_bylookup(record_type, record_mode, headers, row = None, cursor =
 
   response = requests.post(url=GRAPHQL_URL, json={'query': query, 'variables': variables}, headers=headers) 
   if response.status_code != 200:
-    print(f"fetch_items_bylookup: {response.status_code} {response.text}")
+    print_log(f"fetch_items_bylookup: {response.status_code} {response.text}")
     #raise Exception(f"response failed: {response.status_code} {response.text}")
 
   # response.json() and json.loads(response.content) I think are equivalent methods to create a dictionary of json objects
@@ -1102,7 +1145,7 @@ def da_flatten_list(record_type, record_mode, json_list, access_token):
 
             if record_mode == RecordMode.DELETE:
                
-                print('Deleting ' + id_value + ' index: ' + str(index))
+                print_log('Deleting ' + id_value + ' index: ' + str(index))
                 id_value = delete_record(record_type, id_value, access_token)
 
             elif record_mode == RecordMode.UPDATE:
@@ -1112,14 +1155,14 @@ def da_flatten_list(record_type, record_mode, json_list, access_token):
 
                 if should_update_record:
 
-                    print('Updating ' + id_value + ' index: ' + str(index))
+                    print_log('Updating ' + id_value + ' index: ' + str(index))
                     id_value = update_record(record_type, id_value, access_token)
                 else:
                     id_value = None
 
             elif record_mode == RecordMode.INSERT:
 
-              print('Inserting ' + id_value + ' index: ' + str(index))
+              print_log('Inserting ' + id_value + ' index: ' + str(index))
               #id_value = insert_record(record_type, id_value, access_token)
          
           flattened_item = flatten_json_lists(item)
@@ -1132,7 +1175,7 @@ def da_flatten_list(record_type, record_mode, json_list, access_token):
           csv_data.append(flattened_item)
 
       else:
-          print(f"Skipping non-dict item in list '{record_type.name}': {item}")
+          print_log(f"Skipping non-dict item in list '{record_type.name}': {item}")
 
   # Write to CSV file named after the key
   write_to_csv(csv_data, f"{record_type.name}.csv")
@@ -1242,7 +1285,7 @@ def flatten_json_results(y):
         # If it's a list, ignore
         elif type(x) is list:
           no_action = True
-#            print('Skipping list: ' + name)
+#            print_log('Skipping list: ' + name)
 
         else:
             
@@ -1275,7 +1318,7 @@ def write_to_csv(data, filename):
         for row in data:
             writer.writerow(row.values())
 
-#    print(f"Written {full_filename}")
+#    print_log(f"Written {full_filename}")
 
 def check_csv(filename):
     
@@ -1284,7 +1327,7 @@ def check_csv(filename):
     with open(full_filename, 'w') as file:
       pass  # The file is created and immediately closed, leaving it empty
 
-    print(f"Created {full_filename}")
+    print_log(f"Created {full_filename}")
 
 # Using the special variable 
 # __name__
