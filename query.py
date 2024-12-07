@@ -1053,8 +1053,8 @@ def fetch_items_bylookup(record_type, record_mode, headers, row = None, cursor =
         query = query.replace('FIRSTNAME_VALUE', safeValue)
         query = query.replace('LASTNAME_VALUE', str(row['LastName']))
 
-        # Default to NO_MATCH to avoid duplicates due to partial match
-        safeValue = 'NO_MATCH'
+        # Default to 1900-01-01 to avoid duplicates due to partial match
+        safeValue = '1900-01-01'
         if not pd.isna(row['Birthdate']) and not str(row['Birthdate']).strip() == '':
           safeValue = row['Birthdate']
 
