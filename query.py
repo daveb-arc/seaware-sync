@@ -1045,14 +1045,16 @@ def fetch_items_bylookup(record_type, record_mode, headers, row = None, cursor =
       if row is not None:
         # Columns: Id	Name	CustomerID__c	Seaware_Id__c	FirstName	LastName	Email	MiddleName	Title
 
-        safeValue = ''
+        # Default to NO_MATCH to avoid duplicates due to partial match
+        safeValue = 'NO_MATCH'
         if not pd.isna(row['FirstName']) and not str(row['FirstName']).strip() == '':
           safeValue = row['FirstName']
 
         query = query.replace('FIRSTNAME_VALUE', safeValue)
         query = query.replace('LASTNAME_VALUE', str(row['LastName']))
 
-        safeValue = ''
+        # Default to NO_MATCH to avoid duplicates due to partial match
+        safeValue = 'NO_MATCH'
         if not pd.isna(row['Birthdate']) and not str(row['Birthdate']).strip() == '':
           safeValue = row['Birthdate']
 
