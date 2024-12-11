@@ -185,6 +185,7 @@ def process_salesforce_clients(record_type, record_mode):
     
   import pandas as pd
   import math
+  import os
 
   full_filename = 'C:/repo/Salesforce-Exporter-Private/Clients/SEAWARE/Salesforce-Exporter/Clients/SEAWARE/Export/Contact-Prod.csv'
 
@@ -192,6 +193,12 @@ def process_salesforce_clients(record_type, record_mode):
   if len(data_frame) <= 0:
     return
   
+  processed_ids = ''
+  full_filename_processed = 'C:/repo/seaware-sync/output_csv/' + record_type.name + '_processed.csv'
+  if os.path.exists(full_filename_processed):
+    with open(full_filename_processed, 'r') as file:
+        processed_ids = file.read()
+
   for index, row in data_frame.iterrows():
 
       if row['Contact_Type__c'] != 'Guest':
@@ -199,11 +206,11 @@ def process_salesforce_clients(record_type, record_mode):
 
       id_value = row['Seaware_Id__c']
 
-      # Query to setup output file for processing in Excel PowerQuery update to SF
-      json_res = process_seaware(record_type, RecordMode.QUERY, row)
-
       # Check for None or len less than 8 (nan is len 3)
       if row['Seaware_Id__c'] == None or len(str(row['Seaware_Id__c'])) <= 8:
+
+        # Query to setup output file for processing in Excel PowerQuery update to SF
+        json_res = process_seaware(record_type, RecordMode.QUERY, row)
 
         # Check if record found in Seaware by Customer ID
         if len(json_res.get('data').get('clients').get('edges')) <= 0:
@@ -226,8 +233,17 @@ def process_salesforce_clients(record_type, record_mode):
           
         id_value = str(id_value)
 
+        if id_value in processed_ids:
+          continue        
+
+        # Query to setup output file for processing in Excel PowerQuery update to SF
+        json_res = process_seaware(record_type, RecordMode.QUERY, row)
+
       # Update Request for complete field updates
       update_row_client(record_type, RecordMode.UPDATE, row, id_value)
+
+      with open(full_filename_processed, 'a+', newline='') as processed_file:
+        processed_file.write(id_value + ',')
 
 def process_salesforce_agents(record_type, record_mode):
     
@@ -242,7 +258,13 @@ def process_salesforce_agents(record_type, record_mode):
   data_frame = get_csv_dataframe(full_filename)
   if len(data_frame) <= 0:
     return
-  
+
+  processed_ids = ''
+  full_filename_processed = 'C:/repo/seaware-sync/output_csv/' + record_type.name + '_processed.csv'
+  if os.path.exists(full_filename_processed):
+    with open(full_filename_processed, 'r') as file:
+        processed_ids = file.read()
+
   for index, row in data_frame.iterrows():
 
       if row['Contact_Type__c'] != 'Representative':
@@ -261,8 +283,14 @@ def process_salesforce_agents(record_type, record_mode):
 
       id_value = json_res.get('data').get('travelAgents').get('edges')[0].get('node').get('id')
 
+      if id_value in processed_ids:
+        continue        
+
       # Update Request for complete field updates
       update_row_agent(record_type, RecordMode.UPDATE, row, id_value)
+
+      with open(full_filename_processed, 'a+', newline='') as processed_file:
+        processed_file.write(id_value + ',')
 
 def process_salesforce_agencies(record_type, record_mode):
     
@@ -277,6 +305,12 @@ def process_salesforce_agencies(record_type, record_mode):
   data_frame = get_csv_dataframe(full_filename)
   if len(data_frame) <= 0:
     return
+
+  processed_ids = ''
+  full_filename_processed = 'C:/repo/seaware-sync/output_csv/' + record_type.name + '_processed.csv'
+  if os.path.exists(full_filename_processed):
+    with open(full_filename_processed, 'r') as file:
+        processed_ids = file.read()
 
   for index, row in data_frame.iterrows():
 
@@ -296,8 +330,14 @@ def process_salesforce_agencies(record_type, record_mode):
 
       id_value = json_res.get('data').get('agencies').get('edges')[0].get('node').get('id')
 
+      if id_value in processed_ids:
+        continue        
+
       # Update Request for complete field updates
       update_row_agency(record_type, RecordMode.UPDATE, row, id_value)
+
+      with open(full_filename_processed, 'a+', newline='') as processed_file:
+        processed_file.write(id_value + ',')
 
 def process_seaware(record_type, record_mode, row = None): 
 
