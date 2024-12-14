@@ -76,7 +76,26 @@ def main():
 
   else:
 
-    process_seaware(record_type, record_mode)
+    if record_type == RecordType.RESERVATION:
+      
+      import datetime 
+
+      year = 2025
+      for month in range(1, 12):
+        first_day_of_month = datetime.date(year, month, 1)
+        first_day_of_nextmonth = datetime.date(year, month + 1, 1)
+
+        process_seaware(record_type, record_mode, str(first_day_of_month), str(first_day_of_nextmonth))
+
+      year = 2026
+      for month in range(1, 12):
+        first_day_of_month = datetime.date(year, month, 1)
+        first_day_of_nextmonth = datetime.date(year, month + 1, 1)
+
+        process_seaware(record_type, record_mode, str(first_day_of_month), str(first_day_of_nextmonth))
+
+    else:
+      process_seaware(record_type, record_mode, '', '')
 
   exit
 
@@ -210,7 +229,7 @@ def process_salesforce_clients(record_type, record_mode):
       if row['Seaware_Id__c'] == None or len(str(row['Seaware_Id__c'])) <= 8:
 
         # Query to setup output file for processing in Excel PowerQuery update to SF
-        json_res = process_seaware(record_type, RecordMode.QUERY, row)
+        json_res = process_seaware(record_type, RecordMode.QUERY, '', '', row)
 
         # Check if record found in Seaware by Customer ID
         if len(json_res.get('data').get('clients').get('edges')) <= 0:
@@ -225,9 +244,12 @@ def process_salesforce_clients(record_type, record_mode):
           insert_row_client(record_type, RecordMode.INSERT, row)
 
           # Query to setup output file for processing in Excel PowerQuery update to SF
-          json_res = process_seaware(record_type, RecordMode.QUERY, row)
+          json_res = process_seaware(record_type, RecordMode.QUERY, '', '', row)
 
         id_value = json_res.get('data').get('clients').get('edges')[0].get('node').get('id')
+
+        if id_value in processed_ids:
+          continue        
 
       else:
           
@@ -237,7 +259,7 @@ def process_salesforce_clients(record_type, record_mode):
           continue        
 
         # Query to setup output file for processing in Excel PowerQuery update to SF
-        json_res = process_seaware(record_type, RecordMode.QUERY, row)
+        json_res = process_seaware(record_type, RecordMode.QUERY, '', '', row)
 
       # Update Request for complete field updates
       update_row_client(record_type, RecordMode.UPDATE, row, id_value)
@@ -271,7 +293,7 @@ def process_salesforce_agents(record_type, record_mode):
          continue
 
       # Query to setup output file for processing in Excel PowerQuery update to SF
-      json_res = process_seaware(record_type, RecordMode.QUERY, row)
+      json_res = process_seaware(record_type, RecordMode.QUERY, '', '', row)
 
       if len(json_res.get('data').get('travelAgents').get('edges')) <= 0:
 
@@ -279,7 +301,7 @@ def process_salesforce_agents(record_type, record_mode):
         insert_row_agent(record_type, RecordMode.INSERT, row)
 
         # Query to setup output file for processing in Excel PowerQuery update to SF
-        json_res = process_seaware(record_type, RecordMode.QUERY, row)
+        json_res = process_seaware(record_type, RecordMode.QUERY, '', '', row)
 
       id_value = json_res.get('data').get('travelAgents').get('edges')[0].get('node').get('id')
 
@@ -318,7 +340,7 @@ def process_salesforce_agencies(record_type, record_mode):
          continue
 
       # Query to setup output file for processing in Excel PowerQuery update to SF
-      json_res = process_seaware(record_type, RecordMode.QUERY, row)
+      json_res = process_seaware(record_type, RecordMode.QUERY, '', '', row)
 
       if len(json_res.get('data').get('agencies').get('edges')) <= 0:
 
@@ -326,7 +348,7 @@ def process_salesforce_agencies(record_type, record_mode):
         insert_row_agency(record_type, RecordMode.INSERT, row)
 
         # Query to setup output file for processing in Excel PowerQuery update to SF
-        json_res = process_seaware(record_type, RecordMode.QUERY, row)
+        json_res = process_seaware(record_type, RecordMode.QUERY, '', '', row)
 
       id_value = json_res.get('data').get('agencies').get('edges')[0].get('node').get('id')
 
@@ -339,7 +361,7 @@ def process_salesforce_agencies(record_type, record_mode):
       with open(full_filename_processed, 'a+', newline='') as processed_file:
         processed_file.write(id_value + ',')
 
-def process_seaware(record_type, record_mode, row = None): 
+def process_seaware(record_type, record_mode, sailStartDate, sailEndDate, row = None): 
 
   # Record Types
   record_type_value = 'reservations'
@@ -353,7 +375,7 @@ def process_seaware(record_type, record_mode, row = None):
   headers = login_graphql()
 
   # Initial request - no cursor
-  json_res = fetch_items(record_type, record_mode, headers, row)
+  json_res = fetch_items(record_type, record_mode, sailStartDate, sailEndDate, headers, row)
   page_info = None
 
   if record_type_value in json_res['data']: 
@@ -370,10 +392,10 @@ def process_seaware(record_type, record_mode, row = None):
     
     cursor = page_info['endCursor']
     access_token = json_res['extensions']['access_token']
-    json_res = fetch_items(record_type, record_mode, headers, row, cursor, access_token) 
+    json_res = fetch_items(record_type, record_mode, sailStartDate, sailEndDate, headers, row, cursor, access_token) 
 
     # Max query is 500 so if deleting or paging update then just restart the query
-    #json_res = fetch_items(record_type, record_mode, row) 
+    #json_res = fetch_items(record_type, record_mode, sailStartDate, sailEndDate, row) 
 
     incoming_items = len(json_res.get('data').get(record_type_value).get('edges'))
     print_log("cursor: " + cursor + " access_token: " + access_token + " incoming_items: " + str(incoming_items))        
@@ -423,7 +445,7 @@ def process_seaware_bylookup(record_type, record_mode, row = None):
     json_res = fetch_items_bylookup(record_type, record_mode, headers, row, cursor, access_token) 
 
     # Max query is 500 so if deleting or paging update then just restart the query
-    #json_res = fetch_items(record_type, record_mode, row) 
+    #json_res = fetch_items(record_type, record_mode, sailStartDate, sailEndDate, row) 
 
     incoming_items = len(json_res.get('data').get(record_type_value).get('edges'))
     print_log("cursor: " + cursor + " access_token: " + access_token + " incoming_items: " + str(incoming_items))        
@@ -994,7 +1016,7 @@ mutation createRecord {
 # fetch_items - responsible for initial page and additional page results based on cursor
 #
 #####################################################
-def fetch_items(record_type, record_mode, headers, row = None, cursor = None, access_token = None):
+def fetch_items(record_type, record_mode, sailStartDate, sailEndDate, headers, row = None, cursor = None, access_token = None):
    
   input_query = 'Reservations'
   if record_type == RecordType.CLIENT:
@@ -1040,6 +1062,8 @@ def fetch_items(record_type, record_mode, headers, row = None, cursor = None, ac
   variables = {
     'first': 500  # Number of items to fetch (500 is the max)
     ,'after': cursor  # Cursor for pagination
+    ,'sailStart': sailStartDate
+    ,'sailEnd': sailEndDate
   }
 
   response = requests.post(url=GRAPHQL_URL, json={'query': query, 'variables': variables}, headers=headers) 
@@ -1143,6 +1167,8 @@ def process_record(record_type, record_type_value, record_mode, json_res):
       writer = csv.DictWriter(csvfile, fieldnames=flattened_data.keys())
       if not bookingUpsertFileExists:
           writer.writeheader()
+
+      writer.writeheader()
       writer.writerow(flattened_data)
 
   edges = json_res.get('data').get(record_type_value).get('edges')
@@ -1345,6 +1371,21 @@ def write_to_csv(data, filename):
 
     fileCheckPath = Path(full_filename)
     fileCheckExists = fileCheckPath.is_file()
+
+    # Check to update header
+    if fileCheckExists:
+
+      with open(full_filename, mode='r', newline='') as infile:
+          reader = csv.reader(infile)
+          rows = list(reader)
+
+      if len(rows[0]) < len(data[0]):
+
+        rows[0] = data[0].keys()
+
+        with open(full_filename, mode='w', newline='') as outfile:
+            writer = csv.writer(outfile)
+            writer.writerows(rows)
 
     """Write flattened data to a CSV file."""
     with open(full_filename, 'a+', newline='') as csvfile:

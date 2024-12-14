@@ -257,6 +257,7 @@ fragment ReservationFragment on Reservation {
 
         #guest voyages
         voyages {
+            occupancy
             pkg {
                 typeName
                 key
@@ -269,17 +270,6 @@ fragment ReservationFragment on Reservation {
                     code
                     name
                 }
-            }
-
-            cabinChain	{
-              cabin {
-                name
-                key
-                number
-                category {
-                  key
-                }
-              }
             }
 
             category {
@@ -312,6 +302,18 @@ fragment ReservationFragment on Reservation {
                     }
                 }
             }
+
+            cabinChain	{
+              cabin {
+                name
+                key
+                number
+                category {
+                  key
+                }
+              }
+            }
+
         }
     }
     userNotes {
@@ -374,6 +376,7 @@ query getReservations(
     $resIDs: [String!]
 	$resStatusVals: [IdOrKey!]
     $sailStart: Date
+    $sailEnd: Date
     $clientID: IdOrKey
     $clientLastName: String) {
 
@@ -388,7 +391,7 @@ query getReservations(
         keys: $resIDs,
 
         resStatuses: $resStatusVals
-        sailStartDate: $sailStart
+        sailStartDateRange: { from: $sailStart, to: $sailEnd }
         client: $clientID
         clientLastName: $clientLastName
     }) {
