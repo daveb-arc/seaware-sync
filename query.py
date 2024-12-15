@@ -1362,6 +1362,13 @@ def flatten_json_results(y):
     flatten(y)
     return out
 
+def clean_row_values(dictionary_data):
+
+  #print(type(dictionary_data))
+  updated_list = [item.replace("\n", " ") if isinstance(item, str) else item for item in dictionary_data]
+
+  return updated_list
+
 def write_to_csv(data, filename):
     
     if not bool(data):
@@ -1399,7 +1406,7 @@ def write_to_csv(data, filename):
 
         # Write rows
         for row in data:
-            writer.writerow(row.values())
+            writer.writerow(clean_row_values(row.values()))
 
 #    print_log(f"Written {full_filename}")
 
