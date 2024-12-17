@@ -1293,6 +1293,24 @@ def da_flatten_list_bookings(json_list, key, reservationKey):
               if len(guests[0]['voyages']) > 0 and not guests[0]['voyages'][0]['pkg'] == None:
                 da_flatten_list_bookings(guests[0]['voyages'][0]['pkg'], filename, reservationKey)
 
+            filename = RecordType.RESERVATION.name + '_Promos'
+            #check_csv(filename)
+            if not item.get('node') == None and not item.get('node').get('invoice') == None:
+              invoices = item.get('node').get('invoice')
+              da_flatten_list_bookings(invoices, filename, reservationKey)
+
+            filename = RecordType.RESERVATION.name + '_InvoiceTotals'
+            #check_csv(filename)
+            if not item.get('node') == None and not item.get('node').get('invoiceTotals') == None:
+              invoiceTotals = item.get('node').get('invoiceTotals')
+              da_flatten_list_bookings(invoiceTotals, filename, reservationKey)
+
+            filename = RecordType.RESERVATION.name + '_Groups'
+            #check_csv(filename)
+            if not item.get('node') == None and not item.get('node').get('group') == None:
+              groups = item.get('node').get('group')
+              da_flatten_list_bookings(groups, filename, reservationKey)
+
             filename = RecordType.RESERVATION.name + '_Agencies'
             #check_csv(filename)
             if not item.get('node') == None and not item.get('node').get('agency') == None:

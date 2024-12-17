@@ -20,6 +20,12 @@ fragment ReservationFragment on Reservation {
 
     confirmationDate
 
+    invoice {
+      amount
+      guest { seqN }
+      promotion { key name }
+    }
+
     invoiceTotals {
         invoiceTotal
         payments
@@ -75,6 +81,13 @@ fragment ReservationFragment on Reservation {
     group {
         name
         key
+        id
+        type {
+            code
+        }
+      lastInvoice {
+        amount
+      }
     }
     travelWith {
         type {
@@ -332,6 +345,9 @@ fragment ReservationFragment on Reservation {
     agency {
         #agency ID
         key
+        id
+        altId
+
         #agency Name
         name
         addresses {
@@ -367,6 +383,12 @@ fragment ReservationFragment on Reservation {
         lastName
         email
 
+    }
+
+     group {
+      key
+      id
+      name
     }
 }
 
