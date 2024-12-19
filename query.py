@@ -77,7 +77,10 @@ def main():
   else:
 
     if record_type == RecordType.RESERVATION:
-      
+
+      # Add All Reservations
+      process_seaware(record_type, record_mode, '', '')
+
       import datetime 
 
       year = 2025
@@ -1065,6 +1068,13 @@ def fetch_items(record_type, record_mode, sailStartDate, sailEndDate, headers, r
     ,'sailStart': sailStartDate
     ,'sailEnd': sailEndDate
   }
+
+  if sailStartDate == '':
+    
+    # Remove the Sail Date Range
+    query = query.replace('$sailStart: Date', '')
+    query = query.replace('$sailEnd: Date', '')
+    query = query.replace('sailStartDateRange: { from: $sailStart, to: $sailEnd }', '')
 
   response = requests.post(url=GRAPHQL_URL, json={'query': query, 'variables': variables}, headers=headers) 
   if response.status_code != 200:
