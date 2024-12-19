@@ -392,43 +392,45 @@ fragment ReservationFragment on Reservation {
     }
 }
 
-query getReservations(
-    $first: Int!
-    $after: String
-    $resIDs: [String!]
+query GetChangedReservations(
+  # count of results per request
+  $first: Int!
 
-    # Status Values - BK, CL, CX, OF, QT
-	$resStatusVals: [IdOrKey!] = [{key:"QT"}]
+  # the cursor of the latest edge on the previous page, should be null on the first request 
+  $after: String 
 
-    $sailStart: Date
-    $sailEnd: Date
-    $clientID: IdOrKey
-    $clientLastName: String) {
-
-    reservations(
-        #number of records to return
-
-        first: $first
-        #the cursor from the previous page of search results
-        after: $after
-        params: {
-        keys: $resIDs,
-        resStatuses: $resStatusVals
-        sailStartDateRange: { from: $sailStart, to: $sailEnd }
-        client: $clientID
-        clientLastName: $clientLastName
-    }) {
-        edges {
-            node {
-                ...ReservationFragment
-            }
-            cursor
+  # Changed since:
+  $from: DateTime
+  $to: DateTime
+) {
+  reservationHistory(
+    first:$first, 
+    after:$after, 
+    params: {
+      # we are interested only in the latest 
+      # change per booking to avoid duplicates
+      latestPerBooking: true
+      dateTime: {
+            from: $from
+            to: $to
+          }
+  }) {
+    edges {
+      node {
+        currentState {
+          #Reservation current state  
+          ... ReservationFragment
         }
-        pageInfo {
-            hasPreviousPage
-            hasNextPage
-            startCursor
-            endCursor
-        }
+        
+        dateTime
+      }
+      cursor
     }
+    pageInfo {
+        hasPreviousPage
+        hasNextPage
+        startCursor
+        endCursor
+    }
+  }
 }

@@ -78,25 +78,21 @@ def main():
 
     if record_type == RecordType.RESERVATION:
 
-      # Add All Reservations
-      process_seaware(record_type, record_mode, '', '')
-      return
+      from datetime import datetime, timedelta
 
-      import datetime 
+      # Get the current time
+      now = datetime.now()
 
-      year = 2025
-      for month in range(1, 12):
-        first_day_of_month = datetime.date(year, month, 1)
-        first_day_of_nextmonth = datetime.date(year, month + 1, 1)
+      delta_days_ago = now - timedelta(days=7)
 
-        process_seaware(record_type, record_mode, str(first_day_of_month), str(first_day_of_nextmonth))
+      # Iterate from now to delta days ago, in 1-hour steps
+      current_time = now
+      while current_time >= delta_days_ago:
+          end_time = current_time.strftime("%Y-%m-%dT%H:%M:00")
+          current_time -= timedelta(hours=1)
+          start_time = current_time.strftime("%Y-%m-%dT%H:%M:00")
 
-      year = 2026
-      for month in range(1, 12):
-        first_day_of_month = datetime.date(year, month, 1)
-        first_day_of_nextmonth = datetime.date(year, month + 1, 1)
-
-        process_seaware(record_type, record_mode, str(first_day_of_month), str(first_day_of_nextmonth))
+          process_seaware(record_type, record_mode, start_time, end_time)
 
     else:
       process_seaware(record_type, record_mode, '', '')
@@ -365,10 +361,10 @@ def process_salesforce_agencies(record_type, record_mode):
       with open(full_filename_processed, 'a+', newline='') as processed_file:
         processed_file.write(id_value + ',')
 
-def process_seaware(record_type, record_mode, sailStartDate, sailEndDate, row = None): 
+def process_seaware(record_type, record_mode, fromDateTime, toDateTime, row = None): 
 
   # Record Types
-  record_type_value = 'reservations'
+  record_type_value = 'reservationHistory'
   if record_type == RecordType.CLIENT:
     record_type_value = 'clients'
   elif record_type == RecordType.AGENT:
@@ -379,7 +375,7 @@ def process_seaware(record_type, record_mode, sailStartDate, sailEndDate, row = 
   headers = login_graphql()
 
   # Initial request - no cursor
-  json_res = fetch_items(record_type, record_mode, sailStartDate, sailEndDate, headers, row)
+  json_res = fetch_items(record_type, record_mode, fromDateTime, toDateTime, headers, row)
   incoming_items = len(json_res.get('data').get(record_type_value).get('edges'))
   print_log("Initial Query - incoming_items: " + str(incoming_items))     
   if incoming_items >= 500:   
@@ -404,10 +400,10 @@ def process_seaware(record_type, record_mode, sailStartDate, sailEndDate, row = 
     
     cursor = page_info['endCursor']
     access_token = json_res['extensions']['access_token']
-    json_res = fetch_items(record_type, record_mode, sailStartDate, sailEndDate, headers, row, cursor, access_token) 
+    json_res = fetch_items(record_type, record_mode, fromDateTime, toDateTime, headers, row, cursor, access_token) 
 
     # Max query is 500 so if deleting or paging update then just restart the query
-    #json_res = fetch_items(record_type, record_mode, sailStartDate, sailEndDate, row) 
+    #json_res = fetch_items(record_type, record_mode, fromDateTime, toDateTime, row) 
 
     incoming_items = len(json_res.get('data').get(record_type_value).get('edges'))
 
@@ -461,7 +457,7 @@ def process_seaware_bylookup(record_type, record_mode, row = None):
     json_res = fetch_items_bylookup(record_type, record_mode, headers, row, cursor, access_token) 
 
     # Max query is 500 so if deleting or paging update then just restart the query
-    #json_res = fetch_items(record_type, record_mode, sailStartDate, sailEndDate, row) 
+    #json_res = fetch_items(record_type, record_mode, fromDateTime, toDateTime, row) 
 
     incoming_items = len(json_res.get('data').get(record_type_value).get('edges'))
     print_log("cursor: " + cursor + " access_token: " + access_token + " incoming_items: " + str(incoming_items))        
@@ -1027,12 +1023,51 @@ mutation createRecord {
 
   return None
 
+def move_specific_children_to_parent(data, target_parent_keys):
+    
+  """
+  Moves specific children from the target parents to the parent level.
+  
+  Args:
+  - data (dict): The JSON dictionary to process.
+  - target_parent_keys (list): A list of parent keys whose children should be moved.
+  
+  Returns:
+  - dict: The updated dictionary with specified children moved to the parent level.
+  """
+
+  nodes = data.get('data').get('reservationHistory').get('edges')
+  for node in nodes:
+
+    node_data = node.get('node')
+
+    if isinstance(node_data, dict):
+      # Iterate through the dictionary
+      for parent_key, value in node_data.items():
+        if parent_key in target_parent_keys and isinstance(value, dict):
+            
+          # List of keys to move from the child
+          keys_to_move = []
+          
+          # Iterate through the child dictionary and move each key-value pair to the parent level
+          for child_key, child_value in value.items():
+              node_data[child_key] = child_value  # Move child to the parent level
+              keys_to_move.append(child_key)  # Mark the child key for removal
+
+          # Remove the child keys from the parent after moving them
+          for child_key in keys_to_move:
+              del node_data[parent_key][child_key]
+
+          break
+
+  return data
+
 #####################################################
 #
 # fetch_items - responsible for initial page and additional page results based on cursor
 #
 #####################################################
-def fetch_items(record_type, record_mode, sailStartDate, sailEndDate, headers, row = None, cursor = None, access_token = None):
+def fetch_items(record_type, record_mode, fromDateTime, toDateTime, headers, row = None, cursor = None, access_token = None):
    
   input_query = 'Reservations'
   if record_type == RecordType.CLIENT:
@@ -1078,24 +1113,31 @@ def fetch_items(record_type, record_mode, sailStartDate, sailEndDate, headers, r
   variables = {
     'first': 500  # Number of items to fetch (500 is the max)
     ,'after': cursor  # Cursor for pagination
-    ,'sailStart': sailStartDate
-    ,'sailEnd': sailEndDate
+    ,'from': fromDateTime
+    ,'to': toDateTime
   }
 
-  if sailStartDate == '':
+  if fromDateTime == '':
 
     # Remove the Sail Date Range
     query = query.replace('$sailStart: Date', '')
     query = query.replace('$sailEnd: Date', '')
-    query = query.replace('sailStartDateRange: { from: $sailStart, to: $sailEnd }', '')
+    query = query.replace('fromDateTimeRange: { from: $sailStart, to: $sailEnd }', '')
 
   response = requests.post(url=GRAPHQL_URL, json={'query': query, 'variables': variables}, headers=headers) 
   if response.status_code != 200:
     print_log(f"fetch_items: {response.status_code} {response.text}")
     #raise Exception(f"response failed: {response.status_code} {response.text}")
 
+  json_data = response.json()
+  if record_type == RecordType.RESERVATION:
+
+    parents_to_move = ["currentState"]
+    modified_json = move_specific_children_to_parent(json_data, parents_to_move)
+    json_data = modified_json
+
   # response.json() and json.loads(response.content) I think are equivalent methods to create a dictionary of json objects
-  return response.json()
+  return json_data
 
 #####################################################
 #
@@ -1297,8 +1339,8 @@ def da_flatten_list_bookings(json_list, key, reservationKey):
             if next(iter(flattened_items.values())) == None:
                 continue
             
-            if next(iter(flattened_items.keys())) == 'node_key':
-              reservationKey = next(iter(flattened_items.values()))
+            if 'node_key' in flattened_items:
+              reservationKey = flattened_items['node_key']
 
             custom_items = {'index': index, 'reservation': reservationKey}
 
