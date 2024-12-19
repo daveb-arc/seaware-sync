@@ -80,6 +80,7 @@ def main():
 
       # Add All Reservations
       process_seaware(record_type, record_mode, '', '')
+      return
 
       import datetime 
 
@@ -379,6 +380,14 @@ def process_seaware(record_type, record_mode, sailStartDate, sailEndDate, row = 
 
   # Initial request - no cursor
   json_res = fetch_items(record_type, record_mode, sailStartDate, sailEndDate, headers, row)
+  incoming_items = len(json_res.get('data').get(record_type_value).get('edges'))
+  print_log("Initial Query - incoming_items: " + str(incoming_items))     
+  if incoming_items >= 500:   
+    print_log("CAUTION: Initial Query is 500 which is the MAX result set even with paging, reduce query logic.  incoming_items: " + str(incoming_items)) 
+
+  if incoming_items > 0:   
+    print_log(json_res.get('data').get(record_type_value).get('edges')[0].get('node').get('id'))
+
   page_info = None
 
   if record_type_value in json_res['data']: 
@@ -391,7 +400,7 @@ def process_seaware(record_type, record_mode, sailStartDate, sailEndDate, row = 
 
   # Check for next page - max query is total of 500 regardless of the paging request size
   #
-  while page_info['hasNextPage']:
+  while page_info['hasNextPage'] and incoming_items > 0:
     
     cursor = page_info['endCursor']
     access_token = json_res['extensions']['access_token']
@@ -401,14 +410,18 @@ def process_seaware(record_type, record_mode, sailStartDate, sailEndDate, row = 
     #json_res = fetch_items(record_type, record_mode, sailStartDate, sailEndDate, row) 
 
     incoming_items = len(json_res.get('data').get(record_type_value).get('edges'))
-    print_log("cursor: " + cursor + " access_token: " + access_token + " incoming_items: " + str(incoming_items))        
-      
-    if record_type_value in json_res['data']: 
-      process_record(record_type, record_type_value, record_mode, json_res)
-      page_info = json_res['data'][record_type_value]['pageInfo']
 
-    else:
-      print_log("unknown query type")       
+    if incoming_items > 0:   
+      print_log("Paging Query - incoming_items: " + str(incoming_items))        
+      print_log(json_res.get('data').get(record_type_value).get('edges')[0].get('node').get('id'))
+      #print_log("cursor: " + cursor + " access_token: " + access_token + " incoming_items: " + str(incoming_items))        
+        
+      if record_type_value in json_res['data']: 
+        process_record(record_type, record_type_value, record_mode, json_res)
+        page_info = json_res['data'][record_type_value]['pageInfo']
+
+      else:
+        print_log("unknown query type")       
 
   logout_graphql(headers)
 
@@ -1070,7 +1083,7 @@ def fetch_items(record_type, record_mode, sailStartDate, sailEndDate, headers, r
   }
 
   if sailStartDate == '':
-    
+
     # Remove the Sail Date Range
     query = query.replace('$sailStart: Date', '')
     query = query.replace('$sailEnd: Date', '')
