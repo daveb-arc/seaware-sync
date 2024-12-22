@@ -11,6 +11,9 @@ from datetime import date
 #GRAPHQL_URL = 'https://devreservations.uncruise.com:3000/graphql'
 GRAPHQL_URL = 'https://reservations.uncruise.com:3000/graphql'
 
+# AWS - Private Network
+#GRAPHQL_URL = 'http://172.16.120.87:3000/graphql'
+
 class RecordType(Enum):
     CLIENT = 1
     AGENT = 2
@@ -83,7 +86,7 @@ def main():
       # Get the current time
       now = datetime.now()
 
-      delta_days_ago = now - timedelta(days=7)
+      delta_days_ago = now - timedelta(days=1)
 
       # Iterate from now to delta days ago, in 1-hour steps
       current_time = now
