@@ -10,6 +10,7 @@ from datetime import date
 #GRAPHQL_URL = 'https://testreservations.uncruise.com:3000/graphql'
 #GRAPHQL_URL = 'https://devreservations.uncruise.com:3000/graphql'
 GRAPHQL_URL = 'https://reservations.uncruise.com:3000/graphql'
+GRAPHQL_PRIVATEURL = 'http://172.16.120.87:3000/graphql'
 
 # AWS - Private Network
 #GRAPHQL_URL = 'http://172.16.120.87:3000/graphql'
@@ -104,6 +105,24 @@ def main():
 
 #####################################################
 #
+# get_graphql_url - 
+#
+#####################################################
+def get_graphql_url():
+
+  import socket
+  url_value = GRAPHQL_URL
+  
+  hostname = socket.gethostname()
+
+  # Check for AMAZ server
+  if 'AMAZ' in hostname:
+    url_value = GRAPHQL_PRIVATEURL
+
+  return url_value
+
+#####################################################
+#
 # get_csv_dataframe - 
 #
 #####################################################
@@ -161,7 +180,7 @@ mutation login {
 
   token = None
 
-  response = requests.post(url=GRAPHQL_URL, json={"query": login}) 
+  response = requests.post(url=get_graphql_url(), json={"query": login}) 
 
   if response.status_code == 200:
     data = response.json()
@@ -192,7 +211,7 @@ mutation logout {
 }
 """
 
-  response = requests.post(url=GRAPHQL_URL, json={"query": logout}, headers=headers) 
+  response = requests.post(url=get_graphql_url(), json={"query": logout}, headers=headers) 
 
   if response.status_code != 200:
     print_log(f"logout_graphql: {response.status_code} {response.text}")
@@ -515,7 +534,7 @@ def update_record_paging(record_type, id_value, access_token):
     'Authorization': f'Bearer {access_token}'
   }
 
-  response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
+  response = requests.post(url=get_graphql_url(), json={"query": query}, headers=headers) 
   
   if response.status_code != 200:
     print_log(f"update_record_paging: {response.status_code} {response.text}")
@@ -592,7 +611,7 @@ def insert_row_client(record_type, record_mode, row):
 
   headers = login_graphql()
 
-  response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
+  response = requests.post(url=get_graphql_url(), json={"query": query}, headers=headers) 
   if response.status_code != 200:
     print_log(f"insert_row_client: {response.status_code} {response.text}")
     #raise Exception(f"insert_row_client: {response.status_code} {response.text}")
@@ -684,7 +703,7 @@ def update_row_client(record_type, record_mode, row, id_value):
 
   headers = login_graphql()
 
-  response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
+  response = requests.post(url=get_graphql_url(), json={"query": query}, headers=headers) 
   if response.status_code != 200:
     print_log(f"update_row_client: {response.status_code} {response.text}")
     #raise Exception(f"update_row_client: {response.status_code} {response.text}")
@@ -725,7 +744,7 @@ def insert_row_agent(record_type, record_mode, row):
 
   headers = login_graphql()
 
-  response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
+  response = requests.post(url=get_graphql_url(), json={"query": query}, headers=headers) 
   if response.status_code != 200:
     print_log(f"insert_row_agent: {response.status_code} {response.text}")
     #raise Exception(f"insert_row_agent: {response.status_code} {response.text}")
@@ -782,7 +801,7 @@ def update_row_agent(record_type, record_mode, row, id_value):
 
   headers = login_graphql()
 
-  response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
+  response = requests.post(url=get_graphql_url(), json={"query": query}, headers=headers) 
   if response.status_code != 200:
     print_log(f"update_row_agent: {response.status_code} {response.text}")
     #raise Exception(f"update_row_agent: {response.status_code} {response.text}")
@@ -817,7 +836,7 @@ def insert_row_agency(record_type, record_mode, row):
 
   headers = login_graphql()
 
-  response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
+  response = requests.post(url=get_graphql_url(), json={"query": query}, headers=headers) 
   if response.status_code != 200:
     print_log(f"insert_row_agency: {response.status_code} {response.text}")
     #raise Exception(f"insert_row_agency: {response.status_code} {response.text}")
@@ -872,7 +891,7 @@ def update_row_agency(record_type, record_mode, row, id_value):
 
   headers = login_graphql()
 
-  response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
+  response = requests.post(url=get_graphql_url(), json={"query": query}, headers=headers) 
   if response.status_code != 200:
     print_log(f"update_row_agency: {response.status_code} {response.text}")
     #raise Exception(f"update_row_agency: {response.status_code} {response.text}")
@@ -905,7 +924,7 @@ def update_record(record_type, id_value, access_token):
     'Authorization': f'Bearer {access_token}'
   }
 
-  response = requests.post(url=GRAPHQL_URL, json={"query": query}, headers=headers) 
+  response = requests.post(url=get_graphql_url(), json={"query": query}, headers=headers) 
   
   if response.status_code != 200:
     print_log(f"update_record: {response.status_code} {response.text}")
@@ -958,7 +977,7 @@ mutation deleteRecord {
     'Authorization': f'Bearer {access_token}'
   }
 
-  response = requests.post(url=GRAPHQL_URL, json={"query": graphql_query}, headers=headers) 
+  response = requests.post(url=get_graphql_url(), json={"query": graphql_query}, headers=headers) 
   
   if response.status_code != 200:
     print_log(f"delete_record: {response.status_code} {response.text}")
@@ -1011,7 +1030,7 @@ mutation createRecord {
     'Authorization': f'Bearer {access_token}'
   }
 
-  response = requests.post(url=GRAPHQL_URL, json={"query": graphql_query}, headers=headers) 
+  response = requests.post(url=get_graphql_url(), json={"query": graphql_query}, headers=headers) 
   
   if response.status_code != 200:
     print_log(f"create_record: {response.status_code} {response.text}")
@@ -1127,7 +1146,7 @@ def fetch_items(record_type, record_mode, fromDateTime, toDateTime, headers, row
     query = query.replace('$sailEnd: Date', '')
     query = query.replace('fromDateTimeRange: { from: $sailStart, to: $sailEnd }', '')
 
-  response = requests.post(url=GRAPHQL_URL, json={'query': query, 'variables': variables}, headers=headers) 
+  response = requests.post(url=get_graphql_url(), json={'query': query, 'variables': variables}, headers=headers) 
   if response.status_code != 200:
     print_log(f"fetch_items: {response.status_code} {response.text}")
     #raise Exception(f"response failed: {response.status_code} {response.text}")
@@ -1209,7 +1228,7 @@ def fetch_items_bylookup(record_type, record_mode, headers, row = None, cursor =
     ,'after': cursor  # Cursor for pagination
   }
 
-  response = requests.post(url=GRAPHQL_URL, json={'query': query, 'variables': variables}, headers=headers) 
+  response = requests.post(url=get_graphql_url(), json={'query': query, 'variables': variables}, headers=headers) 
   if response.status_code != 200:
     print_log(f"fetch_items_bylookup: {response.status_code} {response.text}")
     #raise Exception(f"response failed: {response.status_code} {response.text}")
@@ -1226,6 +1245,9 @@ def process_record(record_type, record_type_value, record_mode, json_res):
 
   # Flatten the JSON data (results)
   flattened_data = flatten_json_results(json_res)
+
+  if not os.path.exists("C:/repo/seaware-sync/output_csv"):
+    os.makedirs("C:/repo/seaware-sync/output_csv")
 
   bookingUpsertFile = os.path.join("C:/repo/seaware-sync/output_csv", f"{record_type.name}Upsert.csv")
   bookingUpsertFileExists = Path(bookingUpsertFile).is_file()
