@@ -1154,6 +1154,10 @@ def fetch_items(record_type, record_mode, fromDateTime, toDateTime, headers, row
   json_data = response.json()
   if record_type == RecordType.RESERVATION:
 
+    # This is required because all the excel column names would need to change.
+    # Thought 1: could just use the currentState query to get the key and then do single calls to reservation query per key for full details
+    # Thought 2: Write the column and just include a parent name _ child or something that would work for reservation query or a reservation history query with current state
+    # Performance of the conversion probably is not much time though to worry too much about
     parents_to_move = ["currentState"]
     modified_json = move_specific_children_to_parent(json_data, parents_to_move)
     json_data = modified_json
