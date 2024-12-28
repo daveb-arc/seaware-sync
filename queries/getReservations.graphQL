@@ -268,7 +268,7 @@ fragment ReservationFragment on Reservation {
             name
         }
 
-        #guest voyages
+        #guest voyages info
         voyages {
             recordId
             occupancy
