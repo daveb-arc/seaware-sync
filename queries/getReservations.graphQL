@@ -270,6 +270,7 @@ fragment ReservationFragment on Reservation {
 
         #guest voyages
         voyages {
+            recordId
             occupancy
             pkg {
                 typeName
