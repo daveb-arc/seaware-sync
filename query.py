@@ -872,7 +872,8 @@ def update_row_agency(record_type, record_mode, row, id_value):
   # Columns: Id	Name	AgencyID__c	Seaware_Id__c	AgencyType__c	Consortium__c	Consortium_Start_Date__c	Consortium_End_Date__c	IATA_Number__c
   query = query.replace('AGENCYID_VALUE', id_value)
   query = query.replace('AGENCYNAME_VALUE', str(row['Account.Name']))  
-  query = query.replace('AGENGYTYPE_VALUE', str(row['Account.AgencyType__c']))
+  agency_type = str(row['Account.AgencyType__c'])
+  query = query.replace('AGENGYTYPE_VALUE', agency_type)
 
   consortium = ''
   is_consortium = 'false'
@@ -882,6 +883,12 @@ def update_row_agency(record_type, record_mode, row, id_value):
 
   query = query.replace('CONSORTIUMTYPE_VALUE', consortium)
   query = query.replace('ISCONORTIUM_VALUE', is_consortium)
+
+  fp_rat_gross = 'false'
+  if agency_type == 'A' or agency_type == 'Y' or agency_type == 'P':
+    fp_rat_gross = 'true'
+
+  query = query.replace('FPRATGROSS_VALUE', fp_rat_gross)
 
   iata = ''
   if not pd.isna(row['Account.IATA_Number__c']) and not str(row['Account.IATA_Number__c']).strip() == '':
