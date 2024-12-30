@@ -309,6 +309,16 @@ fragment ReservationFragment on Reservation {
                 key
             }
 
+            cabinChain	{
+              cabin {
+                name
+                key
+                number
+                category {
+                  key
+                }
+              }
+            }
             sail {
                 from {
                     dateTime
@@ -324,17 +334,6 @@ fragment ReservationFragment on Reservation {
                         key
                     }
                 }
-            }
-
-            cabinChain	{
-              cabin {
-                name
-                key
-                number
-                category {
-                  key
-                }
-              }
             }
 
         }
