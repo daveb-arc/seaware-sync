@@ -272,6 +272,15 @@ fragment ReservationFragment on Reservation {
         voyages {
             recordId
             occupancy
+            guest {
+                seqN
+                client {
+                key
+                id
+                altId
+                fullName
+                }
+            }
             pkg {
                 typeName
                 key
