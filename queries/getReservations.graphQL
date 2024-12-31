@@ -232,12 +232,19 @@ fragment ReservationFragment on Reservation {
         #guest addons: Special requests + Amenities
         addons {
             addon {
-                type {
-                    key
-                }
+            type {
                 key
             }
+            comments
+            name
+            category {
+                id
+                key
+            }
+            }
+            notes
         }
+
         transfer {
             pkg {
                 code
@@ -281,6 +288,7 @@ fragment ReservationFragment on Reservation {
                 fullName
                 }
             }
+            
             pkg {
                 typeName
                 key
@@ -317,6 +325,17 @@ fragment ReservationFragment on Reservation {
                 category {
                   key
                 }
+                attributes {
+                    attribute {
+                        key
+                        id
+                        name
+                        type {
+                            key
+                            id
+                        }
+                    }
+                }
               }
             }
             sail {
@@ -335,19 +354,6 @@ fragment ReservationFragment on Reservation {
                     }
                 }
             }
-
-            cabinAttributes {
-                attribute {
-                    key
-                    id
-                    name
-                    type {
-                    key
-                    id
-                    }
-                }
-            }
-
         }
     }
     userNotes {

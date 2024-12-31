@@ -1405,14 +1405,17 @@ def da_flatten_list_bookings(json_list, key, reservationKey):
 
               for guest in guests:
                 da_flatten_list_bookings(guest['voyages'], RecordType.RESERVATION.name + '_Voyages', reservationKey)
+                da_flatten_list_bookings(guest['transfer'], RecordType.RESERVATION.name + '_Transfers', reservationKey)
+                da_flatten_list_bookings(guest['addons'], RecordType.RESERVATION.name + '_AddOns', reservationKey)
 
                 filename = RecordType.RESERVATION.name + '_VoyagePackages'
                 if len(guest['voyages']) > 0 and not guest['voyages'][0]['pkg'] == None:
                   da_flatten_list_bookings(guest['voyages'][0]['pkg'], filename, reservationKey)
 
                 filename = RecordType.RESERVATION.name + '_CabinAttributes'
-                if len(guest['voyages']) > 0 and not guest['voyages'][0]['cabinAttributes'] == None:
-                  da_flatten_list_bookings(guest['voyages'][0]['cabinAttributes'], filename, reservationKey)
+                if len(guest['voyages']) > 0 and not guest['voyages'][0]['cabinChain'] == None:
+                  if len(guest['voyages'][0]['cabinChain']) > 0:
+                    da_flatten_list_bookings(guest['voyages'][0]['cabinChain'][0]['cabin']['attributes'], filename, reservationKey)
 
             filename = RecordType.RESERVATION.name + '_Promos'
             #check_csv(filename)
