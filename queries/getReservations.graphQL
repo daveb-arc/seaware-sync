@@ -336,6 +336,18 @@ fragment ReservationFragment on Reservation {
                 }
             }
 
+            cabinAttributes {
+                attribute {
+                    key
+                    id
+                    name
+                    type {
+                    key
+                    id
+                    }
+                }
+            }
+
         }
     }
     userNotes {

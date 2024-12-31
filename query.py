@@ -87,16 +87,31 @@ def main():
       # Get the current time
       now = datetime.now()
 
-      delta_days_ago = now - timedelta(days=1)
+      number_days = 1
 
-      # Iterate from now to delta days ago, in 1-hour steps
-      current_time = now
-      while current_time >= delta_days_ago:
-          end_time = current_time.strftime("%Y-%m-%dT%H:%M:00")
-          current_time -= timedelta(hours=1)
-          start_time = current_time.strftime("%Y-%m-%dT%H:%M:00")
+      delta_days_ago = now - timedelta(days=number_days)
 
-          process_seaware(record_type, record_mode, start_time, end_time)
+      if number_days == 1:
+
+        # Iterate from now to delta days ago, in 1-hour steps
+        current_time = now
+        while current_time >= delta_days_ago:
+            end_time = current_time.strftime("%Y-%m-%dT%H:%M:00")
+            current_time -= timedelta(hours=1)
+            start_time = current_time.strftime("%Y-%m-%dT%H:%M:00")
+
+            process_seaware(record_type, record_mode, start_time, end_time)
+
+      else:
+
+        # Iterate from now to delta days ago, in 1-day steps
+        current_time = now
+        while current_time >= delta_days_ago:
+            end_time = current_time.strftime("%Y-%m-%dT%H:%M:00")
+            current_time -= timedelta(days=1)
+            start_time = current_time.strftime("%Y-%m-%dT%H:%M:00")
+
+            process_seaware(record_type, record_mode, start_time, end_time)
 
     else:
       process_seaware(record_type, record_mode, '', '')
@@ -1392,9 +1407,12 @@ def da_flatten_list_bookings(json_list, key, reservationKey):
                 da_flatten_list_bookings(guest['voyages'], RecordType.RESERVATION.name + '_Voyages', reservationKey)
 
                 filename = RecordType.RESERVATION.name + '_VoyagePackages'
-                #check_csv(filename)
-                if len(guest['voyages']) > 0 and not guests[0]['voyages'][0]['pkg'] == None:
+                if len(guest['voyages']) > 0 and not guest['voyages'][0]['pkg'] == None:
                   da_flatten_list_bookings(guest['voyages'][0]['pkg'], filename, reservationKey)
+
+                filename = RecordType.RESERVATION.name + '_CabinAttributes'
+                if len(guest['voyages']) > 0 and not guest['voyages'][0]['cabinAttributes'] == None:
+                  da_flatten_list_bookings(guest['voyages'][0]['cabinAttributes'], filename, reservationKey)
 
             filename = RecordType.RESERVATION.name + '_Promos'
             #check_csv(filename)
