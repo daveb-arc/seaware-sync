@@ -232,17 +232,28 @@ fragment ReservationFragment on Reservation {
         #guest addons: Special requests + Amenities
         addons {
             addon {
-            type {
-                key
-            }
-            comments
-            name
-            category {
-                id
-                key
-            }
+                type {
+                    key
+                }
+                comments
+                name
+                category {
+                    id
+                    key
+                }
             }
             notes
+            recordId
+            guest {
+                guestId
+                client {
+                    id
+                    key
+                    altId
+                    firstName
+                    lastName
+                }
+            }
         }
 
         transfer {
@@ -288,7 +299,7 @@ fragment ReservationFragment on Reservation {
                 fullName
                 }
             }
-            
+
             pkg {
                 typeName
                 key
