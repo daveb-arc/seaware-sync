@@ -11,6 +11,7 @@ from datetime import date
 #GRAPHQL_URL = 'https://devreservations.uncruise.com:3000/graphql'
 GRAPHQL_URL = 'https://reservations.uncruise.com:3000/graphql'
 GRAPHQL_PRIVATEURL = 'http://172.16.120.87:3000/graphql'
+GRAPHQL_PRIVATEURL2 = 'http://172.16.120.87:3000/graphql'
 
 # AWS - Private Network
 #GRAPHQL_URL = 'http://172.16.120.87:3000/graphql'
@@ -87,29 +88,29 @@ def main():
       # Get the current time
       now = datetime.now()
 
-      number_days = 1
+      number_days = 2
 
       delta_days_ago = now - timedelta(days=number_days)
 
       if number_days == 1:
 
         # Iterate from now to delta days ago, in 1-hour steps
-        current_time = now
-        while current_time >= delta_days_ago:
-            end_time = current_time.strftime("%Y-%m-%dT%H:%M:00")
-            current_time -= timedelta(hours=1)
-            start_time = current_time.strftime("%Y-%m-%dT%H:%M:00")
+        query_time = now
+        while query_time > delta_days_ago:
+            end_time = query_time.strftime("%Y-%m-%dT%H:%M:00")
+            query_time -= timedelta(hours=1)
+            start_time = query_time.strftime("%Y-%m-%dT%H:%M:00")
 
             process_seaware(record_type, record_mode, start_time, end_time)
 
       else:
 
         # Iterate from now to delta days ago, in 1-day steps
-        current_time = now
-        while current_time >= delta_days_ago:
-            end_time = current_time.strftime("%Y-%m-%dT%H:%M:00")
-            current_time -= timedelta(days=1)
-            start_time = current_time.strftime("%Y-%m-%dT%H:%M:00")
+        query_time = now
+        while query_time > delta_days_ago:
+            end_time = query_time.strftime("%Y-%m-%dT%H:%M:00")
+            query_time -= timedelta(days=1)
+            start_time = query_time.strftime("%Y-%m-%dT%H:%M:00")
 
             process_seaware(record_type, record_mode, start_time, end_time)
 
@@ -126,13 +127,23 @@ def main():
 def get_graphql_url():
 
   import socket
+  import requests
+
   url_value = GRAPHQL_URL
   
   hostname = socket.gethostname()
 
   # Check for AMAZ server
-  if 'AMAZ' in hostname:
+  if 'AMAZ' in hostname:    
     url_value = GRAPHQL_PRIVATEURL
+
+    try:
+      response = requests.get(url_value, timeout=2)  # Adjust timeout as needed
+      if not response.status_code == 200 and not response.status_code == 400:
+        url_value = GRAPHQL_PRIVATEURL2
+
+    except requests.exceptions.RequestException as e:
+      url_value = GRAPHQL_PRIVATEURL2
 
   return url_value
 
@@ -1293,7 +1304,7 @@ def process_record(record_type, record_type_value, record_mode, json_res):
   da_flatten_list(record_type, record_mode, edges, access_token)
 
   if record_type == RecordType.RESERVATION:
-    da_flatten_list_bookings(edges, record_type.name + '_Booking', None)
+    da_flatten_list_bookings(edges, record_type.name + '_Booking', None, None)
 
 def da_flatten_list(record_type, record_mode, json_list, access_token):
 
@@ -1364,7 +1375,10 @@ def da_flatten_list(record_type, record_mode, json_list, access_token):
   # Write to CSV file named after the key
   write_to_csv(csv_data, f"{record_type.name}.csv")
 
-def da_flatten_list_bookings(json_list, key, reservationKey):
+def get_values_by_key_substring(d, substring):
+    return [value for key, value in d.items() if substring in key]
+
+def da_flatten_list_bookings(json_list, key, reservationKey, guestKey):
 
   # Create a list of dictionaries for CSV writing
   csv_data = []
@@ -1393,7 +1407,11 @@ def da_flatten_list_bookings(json_list, key, reservationKey):
             if 'node_key' in flattened_items:
               reservationKey = flattened_items['node_key']
 
-            custom_items = {'index': index, 'reservation': reservationKey}
+            client_ids = get_values_by_key_substring(flattened_items, "client_id")
+            if len(client_ids) > 0:
+              guestKey = client_ids[len(client_ids) - 1]
+
+            custom_items = {'index': index, 'reservation': reservationKey, 'guest': guestKey}
 
             flattened_item = {**custom_items, **flattened_items}
 
@@ -1401,57 +1419,62 @@ def da_flatten_list_bookings(json_list, key, reservationKey):
 
             if not item.get('node') == None and not item.get('node').get('guests') == None:
               guests = item.get('node').get('guests')
-              da_flatten_list_bookings(guests, RecordType.RESERVATION.name + '_Guests', reservationKey)
+              da_flatten_list_bookings(guests, RecordType.RESERVATION.name + '_Guests', reservationKey, guestKey)
 
               for guest in guests:
-                da_flatten_list_bookings(guest['voyages'], RecordType.RESERVATION.name + '_Voyages', reservationKey)
-                da_flatten_list_bookings(guest['transfer'], RecordType.RESERVATION.name + '_Transfers', reservationKey)
-                da_flatten_list_bookings(guest['addons'], RecordType.RESERVATION.name + '_AddOns', reservationKey)
+                da_flatten_list_bookings(guest['voyages'], RecordType.RESERVATION.name + '_Voyages', reservationKey, guestKey)
+                da_flatten_list_bookings(guest['transfer'], RecordType.RESERVATION.name + '_Transfers', reservationKey, guestKey)
+                da_flatten_list_bookings(guest['addons'], RecordType.RESERVATION.name + '_AddOns', reservationKey, guestKey)
 
                 filename = RecordType.RESERVATION.name + '_VoyagePackages'
                 if len(guest['voyages']) > 0 and not guest['voyages'][0]['pkg'] == None:
-                  da_flatten_list_bookings(guest['voyages'][0]['pkg'], filename, reservationKey)
+                  da_flatten_list_bookings(guest['voyages'][0]['pkg'], filename, reservationKey, guestKey)
 
                 filename = RecordType.RESERVATION.name + '_CabinAttributes'
                 if len(guest['voyages']) > 0 and not guest['voyages'][0]['cabinChain'] == None:
                   if len(guest['voyages'][0]['cabinChain']) > 0:
-                    da_flatten_list_bookings(guest['voyages'][0]['cabinChain'][0]['cabin']['attributes'], filename, reservationKey)
+                    da_flatten_list_bookings(guest['voyages'][0]['cabinChain'][0]['cabin']['attributes'], filename, reservationKey, guestKey)
+
+                filename = RecordType.RESERVATION.name + '_BorderForms'
+                if not guest['client'] == None and not guest['client']['borderForms'] == None:
+                  if len(guest['client']['borderForms']) > 0:
+                    da_flatten_list_bookings(guest['client']['borderForms'], filename, reservationKey, guestKey)
 
             filename = RecordType.RESERVATION.name + '_Promos'
             #check_csv(filename)
             if not item.get('node') == None and not item.get('node').get('invoice') == None:
               invoices = item.get('node').get('invoice')
-              da_flatten_list_bookings(invoices, filename, reservationKey)
+              da_flatten_list_bookings(invoices, filename, reservationKey, guestKey)
 
             filename = RecordType.RESERVATION.name + '_InvoiceTotals'
             #check_csv(filename)
             if not item.get('node') == None and not item.get('node').get('invoiceTotals') == None:
               invoiceTotals = item.get('node').get('invoiceTotals')
-              da_flatten_list_bookings(invoiceTotals, filename, reservationKey)
+              da_flatten_list_bookings(invoiceTotals, filename, reservationKey, guestKey)
 
             filename = RecordType.RESERVATION.name + '_Groups'
             #check_csv(filename)
             if not item.get('node') == None and not item.get('node').get('group') == None:
               groups = item.get('node').get('group')
-              da_flatten_list_bookings(groups, filename, reservationKey)
+              da_flatten_list_bookings(groups, filename, reservationKey, guestKey)
 
             filename = RecordType.RESERVATION.name + '_Agencies'
             #check_csv(filename)
             if not item.get('node') == None and not item.get('node').get('agency') == None:
               agencies = item.get('node').get('agency')
-              da_flatten_list_bookings(agencies, filename, reservationKey)
+              da_flatten_list_bookings(agencies, filename, reservationKey, guestKey)
 
             filename = RecordType.RESERVATION.name + '_secondaryAgent'
             #check_csv(filename)
             if not item.get('node') == None and not item.get('node').get('secondaryAgent') == None:
               secondaryAgent = item.get('node').get('secondaryAgent')
-              da_flatten_list_bookings(secondaryAgent, filename, reservationKey)
+              da_flatten_list_bookings(secondaryAgent, filename, reservationKey, guestKey)
 
             filename = RecordType.RESERVATION.name + '_Contact'
             #check_csv(filename)
             if not item.get('node') == None and not item.get('node').get('contact') == None:
               contact = item.get('node').get('contact')
-              da_flatten_list_bookings(contact, filename, reservationKey)
+              da_flatten_list_bookings(contact, filename, reservationKey, guestKey)
 
   # Write to CSV file named after the key
   write_to_csv(csv_data, f"{key}.csv")

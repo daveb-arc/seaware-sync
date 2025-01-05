@@ -139,6 +139,7 @@ fragment ReservationFragment on Reservation {
                 expirationDate
             }
             borderForms {
+                recordId
                 reservation {
                     id
                 }
@@ -159,6 +160,15 @@ fragment ReservationFragment on Reservation {
                     }
                     issuedCity
                 }
+                emergencyContact {
+                  name
+                  eMail
+                  phoneNumber
+                  relationship {
+                    key
+                    id
+                  }
+                }                
             }
             preferences {
                 type {
