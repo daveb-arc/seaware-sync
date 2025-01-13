@@ -22,6 +22,9 @@ fragment ReservationFragment on Reservation {
 
     invoice {
       amount
+      type {
+        id
+      }
       guest { seqN }
       promotion { key name }
     }
@@ -438,6 +441,35 @@ fragment ReservationFragment on Reservation {
       id
       name
     }
+
+    independentAir {
+        guest {
+            client {
+                id
+                key
+            }
+            guestId
+        }
+        flights {
+            airline {
+                id
+                key
+                name
+            }
+            departureAirport {
+                id
+                key
+            }
+            arrivalAirport {
+                id
+                key
+            }
+            flightNo
+            departureDateTime
+            arrivalDateTime
+        }
+    }
+
 }
 
 query GetChangedReservations(

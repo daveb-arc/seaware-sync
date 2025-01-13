@@ -88,7 +88,7 @@ def main():
       # Get the current time
       now = datetime.now()
 
-      number_days = 2
+      number_days = 1
 
       delta_days_ago = now - timedelta(days=number_days)
 
@@ -1451,6 +1451,12 @@ def da_flatten_list_bookings(json_list, key, reservationKey, guestKey):
             if not item.get('node') == None and not item.get('node').get('invoiceTotals') == None:
               invoiceTotals = item.get('node').get('invoiceTotals')
               da_flatten_list_bookings(invoiceTotals, filename, reservationKey, guestKey)
+
+            filename = RecordType.RESERVATION.name + '_IndependentAir'
+            #check_csv(filename)
+            if not item.get('node') == None and not item.get('node').get('independentAir') == None:
+              air = item.get('node').get('independentAir')
+              da_flatten_list_bookings(air, filename, reservationKey, guestKey)
 
             filename = RecordType.RESERVATION.name + '_Groups'
             #check_csv(filename)
