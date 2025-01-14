@@ -20,6 +20,15 @@ fragment ReservationFragment on Reservation {
 
     confirmationDate
 
+    referralSource {
+        key
+        id
+        type {
+            id
+            key
+        }
+    }
+
     invoice {
       amount
       type {

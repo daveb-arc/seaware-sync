@@ -1222,7 +1222,7 @@ def fetch_items(record_type, record_mode, fromDateTime, toDateTime, headers, row
       from datetime import datetime, timedelta
 
       today = datetime.today()
-      number_of_days = 365 * 3
+      number_of_days = 90
       end_range = today + timedelta(days=number_of_days)
 
       formatted_todate = end_range.strftime("%Y-%m-%d")
@@ -1535,6 +1535,12 @@ def da_flatten_list_bookings(json_list, key, reservationKey, guestKey):
             if not item.get('node') == None and not item.get('node').get('invoiceTotals') == None:
               invoiceTotals = item.get('node').get('invoiceTotals')
               da_flatten_list_bookings(invoiceTotals, filename, reservationKey, guestKey)
+
+            filename = RecordType.RESERVATION.name + '_ReferralSource'
+            #check_csv(filename)
+            if not item.get('node') == None and not item.get('node').get('referralSource') == None:
+              referralSource = item.get('node').get('referralSource')
+              da_flatten_list_bookings(referralSource, filename, reservationKey, guestKey)
 
             filename = RecordType.RESERVATION.name + '_IndependentAir'
             #check_csv(filename)
