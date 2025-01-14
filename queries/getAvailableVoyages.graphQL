@@ -1,0 +1,25 @@
+query getAvailableVoyages {
+  availableVoyages(params: {
+    
+    startDateRange: {
+      from: "FROMDATETIME_VALUE"
+      to: "TODATETIME_VALUE"
+  }
+  }) {
+    
+ 		sail {
+      
+      from {
+        dateTime
+      }
+      to {
+        dateTime
+      } 
+      
+      ship {
+        id
+        key
+      }
+    }
+  }
+}

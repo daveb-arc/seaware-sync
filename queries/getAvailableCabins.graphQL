@@ -1,0 +1,25 @@
+
+  query getAvailableCabins {
+  availableCabins(params: {
+    
+    sailRange: {
+    
+      from: {dateTime:  "SHIP_FROMDATETIME_VALUE"}
+      to: {dateTime:  "SHIP_TODATETIME_VALUE"}
+       ship: {
+        key: "SHIP_VALUE"
+      }
+    }
+  }) {
+    
+  	cabin {
+      ship {
+        name
+      }
+      id
+      name
+      number
+      
+    }
+  }
+}
