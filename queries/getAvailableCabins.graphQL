@@ -12,14 +12,19 @@
     }
   }) {
     
-  	cabin {
-      ship {
+    cabin {
+        ship {
+            name
+        }
+        id
         name
-      }
-      id
-      name
-      number
-      
+        number
+        category {
+            id
+            key
+            code
+            description
+        }     
     }
   }
 }

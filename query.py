@@ -23,6 +23,7 @@ class RecordType(Enum):
     RESERVATION = 4
     CRUISE = 5
     CABIN = 6
+    SHIP = 7
 
 class RecordMode(Enum):
     UPDATE = 1
@@ -89,7 +90,8 @@ def main():
 
     if record_type == RecordType.CRUISE:
 
-      process_inventory_cruise(record_type)
+    #  process_inventory_cruise(record_type)
+      process_inventory_shipcabin(RecordType.SHIP)
 
     elif record_type == RecordType.RESERVATION:
 
@@ -386,6 +388,13 @@ def process_inventory_cruise(record_type):
     json_res = process_seaware(RecordType.CABIN, RecordMode.QUERY, '', '', voyage)
 #    cabins = json_res.get('data').get('availableCabins')
 
+def process_inventory_shipcabin(record_type):
+    
+  import pandas as pd
+
+  # Get all Cabins by Ship
+  json_res = process_seaware(record_type, RecordMode.QUERY, '', '')
+
 def process_salesforce_agencies(record_type, record_mode):
     
   import pandas as pd
@@ -447,6 +456,8 @@ def process_seaware(record_type, record_mode, fromDateTime, toDateTime, row = No
     record_type_value = 'availableVoyages'
   elif record_type == RecordType.CABIN:
     record_type_value = 'availableCabins'
+  elif record_type == RecordType.SHIP:
+    record_type_value = 'cabins'
 
   headers = login_graphql()
 
@@ -454,7 +465,7 @@ def process_seaware(record_type, record_mode, fromDateTime, toDateTime, row = No
   json_res = fetch_items(record_type, record_mode, fromDateTime, toDateTime, headers, row)
   incoming_items = len(json_res.get('data').get(record_type_value))
 
-  if record_type != RecordType.CRUISE and record_type != RecordType.CABIN:
+  if record_type != RecordType.CRUISE and record_type != RecordType.CABIN and record_type != RecordType.SHIP:
     incoming_items = len(json_res.get('data').get(record_type_value).get('edges'))
   
   print_log("Initial Query - incoming_items: " + str(incoming_items))     
@@ -462,7 +473,7 @@ def process_seaware(record_type, record_mode, fromDateTime, toDateTime, row = No
     print_log("CAUTION: Initial Query is 500 which is the MAX result set even with paging, reduce query logic.  incoming_items: " + str(incoming_items)) 
 
   if incoming_items > 0:
-    if record_type != RecordType.CRUISE and record_type != RecordType.CABIN:
+    if record_type != RecordType.CRUISE and record_type != RecordType.CABIN and record_type != RecordType.SHIP:
       print_log(json_res.get('data').get(record_type_value).get('edges')[0].get('node').get('id'))
 
   page_info = None
@@ -470,7 +481,7 @@ def process_seaware(record_type, record_mode, fromDateTime, toDateTime, row = No
   if record_type_value in json_res['data']: 
     process_record(record_type, record_type_value, record_mode, json_res, row)
 
-    if record_type != RecordType.CRUISE and record_type != RecordType.CABIN:
+    if record_type != RecordType.CRUISE and record_type != RecordType.CABIN and record_type != RecordType.SHIP:
       page_info = json_res['data'][record_type_value]['pageInfo']
 
   else:
@@ -493,7 +504,7 @@ def process_seaware(record_type, record_mode, fromDateTime, toDateTime, row = No
     if incoming_items > 0:   
       print_log("Paging Query - incoming_items: " + str(incoming_items))        
 
-      if record_type != RecordType.CRUISE and record_type != RecordType.CABIN:
+      if record_type != RecordType.CRUISE and record_type != RecordType.CABIN and record_type != RecordType.SHIP:
         print_log(json_res.get('data').get(record_type_value).get('edges')[0].get('node').get('id'))
         #print_log("cursor: " + cursor + " access_token: " + access_token + " incoming_items: " + str(incoming_items))        
         
@@ -1182,6 +1193,10 @@ def fetch_items(record_type, record_mode, fromDateTime, toDateTime, headers, row
     
     input_query = 'AvailableCabins'
 
+  elif record_type == RecordType.SHIP:
+    
+    input_query = 'Cabins'
+
   query = None
   with open('C:/repo/seaware-sync/queries/get' + input_query + '.graphQL', 'r') as file:
     query = file.read()
@@ -1222,8 +1237,9 @@ def fetch_items(record_type, record_mode, fromDateTime, toDateTime, headers, row
       from datetime import datetime, timedelta
 
       today = datetime.today()
-      number_of_days = 90
-      end_range = today + timedelta(days=number_of_days)
+      number_days = 365 * 3
+      #number_days = 3
+      end_range = today + timedelta(days=number_days)
 
       formatted_todate = end_range.strftime("%Y-%m-%d")
       query = query.replace('TODATETIME_VALUE', formatted_todate)
@@ -1246,7 +1262,18 @@ def fetch_items(record_type, record_mode, fromDateTime, toDateTime, headers, row
     query = query.replace('$sailEnd: Date', '')
     query = query.replace('fromDateTimeRange: { from: $sailStart, to: $sailEnd }', '')
 
-  response = requests.post(url=get_graphql_url(), json={'query': query, 'variables': variables}, headers=headers) 
+  timeout_value = 60
+  response = ''
+  try:
+
+    response = requests.post(url=get_graphql_url(), json={'query': query, 'variables': variables}, headers=headers, timeout=timeout_value) 
+  except requests.exceptions.Timeout:
+      
+      print(f"Request timed out after {timeout_value} seconds")
+
+  except requests.exceptions.RequestException as e:
+      print(f"An error occurred: {e}")  
+
   if response.status_code != 200:
     print_log(f"fetch_items: {response.status_code} {response.text}")
     #raise Exception(f"response failed: {response.status_code} {response.text}")
@@ -1366,7 +1393,7 @@ def process_record(record_type, record_type_value, record_mode, json_res, row = 
       writer.writerow(flattened_data)
 
   edges = json_res.get('data').get(record_type_value)
-  if record_type != RecordType.CRUISE and record_type != RecordType.CABIN:
+  if record_type != RecordType.CRUISE and record_type != RecordType.CABIN and record_type != RecordType.SHIP:
     edges = json_res.get('data').get(record_type_value).get('edges')
 
   access_token = json_res['extensions']['access_token']
@@ -1384,7 +1411,7 @@ def da_flatten_list(record_type, record_mode, json_list, access_token, row = Non
       
       if isinstance(item, dict):
           
-          if record_type != RecordType.CRUISE and record_type != RecordType.CABIN:
+          if record_type != RecordType.CRUISE and record_type != RecordType.CABIN and record_type != RecordType.SHIP:
 
             # Check to clear out automation created record
             id_value = item['node']['id']

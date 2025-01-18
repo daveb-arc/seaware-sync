@@ -1,0 +1,20 @@
+  query getCabins {
+  cabins(params: {}) {   
+    
+    ship {
+      id
+      key
+      name
+    }
+    id
+    key
+    name
+    number
+    category {
+        id
+        key
+        code
+        description
+    }     
+  }
+}
