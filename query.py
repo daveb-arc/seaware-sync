@@ -90,10 +90,13 @@ def main():
 
     if record_type == RecordType.CRUISE:
 
-    #  process_inventory_cruise(record_type)
+      process_inventory_cruise(record_type)
       process_inventory_shipcabin(RecordType.SHIP)
 
     elif record_type == RecordType.RESERVATION:
+
+      # Process single reservation
+      process_seaware(record_type, record_mode, id_value = 'Reservation|10166')
 
       from datetime import datetime, timedelta
 
@@ -101,11 +104,12 @@ def main():
       now = datetime.now()
 
       # Transfer and Flight linking happens in 2 different change events which is currently driven by SyncDate__c on Item which takes a day change to be updated the 2nd time
-      number_days = 2
+      number_days = 1
 
       delta_days_ago = now - timedelta(days=number_days)
 
-      if number_days == 1:
+      # Query by hour because as of 1/17/25 the day query is taking too long, investigating but until then do hour query
+      if number_days < 90:
 
         # Iterate from now to delta days ago, in 1-hour steps
         query_time = now
@@ -442,7 +446,7 @@ def process_salesforce_agencies(record_type, record_mode):
       with open(full_filename_processed, 'a+', newline='') as processed_file:
         processed_file.write(id_value + ',')
 
-def process_seaware(record_type, record_mode, fromDateTime, toDateTime, row = None): 
+def process_seaware(record_type, record_mode, fromDateTime = None, toDateTime = None, row = None, id_value = None): 
 
   # Record Types
   record_type_value = 'reservationHistory'
@@ -462,7 +466,7 @@ def process_seaware(record_type, record_mode, fromDateTime, toDateTime, row = No
   headers = login_graphql()
 
   # Initial request - no cursor
-  json_res = fetch_items(record_type, record_mode, fromDateTime, toDateTime, headers, row)
+  json_res = fetch_items(record_type, record_mode, fromDateTime, toDateTime, headers, row, id_value=id_value)
   incoming_items = len(json_res.get('data').get(record_type_value))
 
   if record_type != RecordType.CRUISE and record_type != RecordType.CABIN and record_type != RecordType.SHIP:
@@ -494,7 +498,7 @@ def process_seaware(record_type, record_mode, fromDateTime, toDateTime, row = No
     
     cursor = page_info['endCursor']
     access_token = json_res['extensions']['access_token']
-    json_res = fetch_items(record_type, record_mode, fromDateTime, toDateTime, headers, row, cursor, access_token) 
+    json_res = fetch_items(record_type, record_mode, fromDateTime, toDateTime, headers, row, cursor, access_token, id_value) 
 
     # Max query is 500 so if deleting or paging update then just restart the query
     #json_res = fetch_items(record_type, record_mode, fromDateTime, toDateTime, row) 
@@ -1170,7 +1174,7 @@ def move_specific_children_to_parent(data, target_parent_keys):
 # fetch_items - responsible for initial page and additional page results based on cursor
 #
 #####################################################
-def fetch_items(record_type, record_mode, fromDateTime, toDateTime, headers, row = None, cursor = None, access_token = None):
+def fetch_items(record_type, record_mode, fromDateTime, toDateTime, headers, row = None, cursor = None, access_token = None, id_value = None):
    
   input_query = 'Reservations'
   if record_type == RecordType.CLIENT:
@@ -1248,6 +1252,13 @@ def fetch_items(record_type, record_mode, fromDateTime, toDateTime, headers, row
       formatted_fromdate = today.strftime("%Y-%m-%d")
       query = query.replace('FROMDATETIME_VALUE', formatted_fromdate)
 
+  if id_value is not None:
+    fromDateTime = '2024-01-01'
+    toDateTime = '2099-01-01'
+    query = query.replace('ID_VALUE_TOKEN', id_value)
+  else:
+    query = query.replace('id: "ID_VALUE_TOKEN"', '')
+
   variables = {
     'first': 500  # Number of items to fetch (500 is the max)
     ,'after': cursor  # Cursor for pagination
@@ -1262,7 +1273,7 @@ def fetch_items(record_type, record_mode, fromDateTime, toDateTime, headers, row
     query = query.replace('$sailEnd: Date', '')
     query = query.replace('fromDateTimeRange: { from: $sailStart, to: $sailEnd }', '')
 
-  timeout_value = 60
+  timeout_value = 120
   response = ''
   try:
 

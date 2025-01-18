@@ -1,21 +1,16 @@
 fragment ReservationFragment on Reservation {
-    #Reservation Seaware ID
     key
     id
 
-    #Reservation migrated ID
     altResId
 
-    #Reservation Status
     status {
         key
     }
 
-    #Booking initial date
     initialDate
     originalInitialDate
 
-    #last Updated time
     lastUpdated
 
     confirmationDate
@@ -66,7 +61,6 @@ fragment ReservationFragment on Reservation {
         }
     }
 
-    #Emergency Contact
     contact {
         firstName
         lastName
@@ -89,7 +83,6 @@ fragment ReservationFragment on Reservation {
         name
     }
 
-    #Group info
     group {
         name
         key
@@ -124,7 +117,6 @@ fragment ReservationFragment on Reservation {
 
     guests {
         seqN
-        #Personal information about guest
 
         client {
             id
@@ -135,10 +127,8 @@ fragment ReservationFragment on Reservation {
             middleName
             eMail
             birthday
-            #Client photo as Base64 encoded string
             checkInPhoto
             checkInPhotoType
-            #Passport information
             title {
                 id
                 key
@@ -226,7 +216,6 @@ fragment ReservationFragment on Reservation {
                 key
             }
         }
-        #Dining info
         dinings {
             restaurant {
                 code
@@ -251,7 +240,6 @@ fragment ReservationFragment on Reservation {
                 key
             }
         }
-        #guest addons: Special requests + Amenities
         addons {
             addon {
                 type {
@@ -308,7 +296,6 @@ fragment ReservationFragment on Reservation {
             name
         }
 
-        #guest voyages info
         voyages {
             recordId
             occupancy
@@ -350,7 +337,7 @@ fragment ReservationFragment on Reservation {
                 key
             }
 
-            cabinChain	{
+            cabinChain {
               cabin {
                 name
                 key
@@ -403,12 +390,10 @@ fragment ReservationFragment on Reservation {
     }
 
     agency {
-        #agency ID
         key
         id
         altId
 
-        #agency Name
         name
         addresses {
             line1
@@ -426,7 +411,6 @@ fragment ReservationFragment on Reservation {
             zip
 
         }
-        #all agency phones
         phones {
             intlCode
             number
@@ -435,9 +419,7 @@ fragment ReservationFragment on Reservation {
             }
         }
     }
-    #agent info
     agent {
-        #agent Seaware ID
         key
         firstName
         lastName
@@ -482,13 +464,10 @@ fragment ReservationFragment on Reservation {
 }
 
 query GetChangedReservations(
-  # count of results per request
   $first: Int!
 
-  # the cursor of the latest edge on the previous page, should be null on the first request 
   $after: String 
 
-  # Changed since:
   $from: DateTime
   $to: DateTime
 ) {
@@ -496,8 +475,7 @@ query GetChangedReservations(
     first:$first, 
     after:$after, 
     params: {
-      # we are interested only in the latest 
-      # change per booking to avoid duplicates
+      id: "ID_VALUE_TOKEN"
       latestPerBooking: true
       dateTime: {
             from: $from
@@ -507,7 +485,6 @@ query GetChangedReservations(
     edges {
       node {
         currentState {
-          #Reservation current state  
           ... ReservationFragment
         }
         
