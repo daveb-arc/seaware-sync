@@ -1588,49 +1588,57 @@ def da_flatten_list_bookings(json_list, key, reservationKey, guestKey):
             #check_csv(filename)
             if not item.get('node') == None and not item.get('node').get('invoice') == None:
               invoices = item.get('node').get('invoice')
-              da_flatten_list_bookings(invoices, filename, reservationKey, guestKey)
+              if len(invoices) > 0:
+                da_flatten_list_bookings(invoices, filename, reservationKey, guestKey)
 
             filename = RecordType.RESERVATION.name + '_InvoiceTotals'
             #check_csv(filename)
             if not item.get('node') == None and not item.get('node').get('invoiceTotals') == None:
               invoiceTotals = item.get('node').get('invoiceTotals')
-              da_flatten_list_bookings(invoiceTotals, filename, reservationKey, guestKey)
+              if len(invoiceTotals) > 0:
+                da_flatten_list_bookings(invoiceTotals, filename, reservationKey, guestKey)
 
             filename = RecordType.RESERVATION.name + '_ReferralSource'
             #check_csv(filename)
             if not item.get('node') == None and not item.get('node').get('referralSource') == None:
               referralSource = item.get('node').get('referralSource')
-              da_flatten_list_bookings(referralSource, filename, reservationKey, guestKey)
+              if len(referralSource) > 0:
+                da_flatten_list_bookings(referralSource, filename, reservationKey, guestKey)
 
             filename = RecordType.RESERVATION.name + '_IndependentAir'
             #check_csv(filename)
             if not item.get('node') == None and not item.get('node').get('independentAir') == None:
               air = item.get('node').get('independentAir')
-              da_flatten_list_bookings(air, filename, reservationKey, guestKey)
+              if len(air) > 0:
+                da_flatten_list_bookings(air, filename, reservationKey, guestKey)
 
             filename = RecordType.RESERVATION.name + '_Groups'
             #check_csv(filename)
             if not item.get('node') == None and not item.get('node').get('group') == None:
               groups = item.get('node').get('group')
-              da_flatten_list_bookings(groups, filename, reservationKey, guestKey)
+              if len(groups) > 0:
+                da_flatten_list_bookings(groups, filename, reservationKey, guestKey)
 
             filename = RecordType.RESERVATION.name + '_Agencies'
             #check_csv(filename)
             if not item.get('node') == None and not item.get('node').get('agency') == None:
               agencies = item.get('node').get('agency')
-              da_flatten_list_bookings(agencies, filename, reservationKey, guestKey)
+              if len(agencies) > 0:
+                da_flatten_list_bookings(agencies, filename, reservationKey, guestKey)
 
             filename = RecordType.RESERVATION.name + '_secondaryAgent'
             #check_csv(filename)
             if not item.get('node') == None and not item.get('node').get('secondaryAgent') == None:
               secondaryAgent = item.get('node').get('secondaryAgent')
-              da_flatten_list_bookings(secondaryAgent, filename, reservationKey, guestKey)
+              if len(secondaryAgent) > 0:
+                da_flatten_list_bookings(secondaryAgent, filename, reservationKey, guestKey)
 
             filename = RecordType.RESERVATION.name + '_Contact'
             #check_csv(filename)
             if not item.get('node') == None and not item.get('node').get('contact') == None:
               contact = item.get('node').get('contact')
-              da_flatten_list_bookings(contact, filename, reservationKey, guestKey)
+              if len(contact) > 0:
+                da_flatten_list_bookings(contact, filename, reservationKey, guestKey)
 
   # Write to CSV file named after the key
   write_to_csv(csv_data, f"{key}.csv")
@@ -1707,13 +1715,15 @@ def write_to_csv(data, filename):
           reader = csv.reader(infile)
           rows = list(reader)
 
-      if len(rows[0]) < len(data[0]):
+      for data_row in data:
 
-        rows[0] = data[0].keys()
+        if len(rows[0]) < len(data_row):
 
-        with open(full_filename, mode='w', newline='') as outfile:
-            writer = csv.writer(outfile)
-            writer.writerows(rows)
+          rows[0] = data_row.keys()
+
+          with open(full_filename, mode='w', newline='') as outfile:
+              writer = csv.writer(outfile)
+              writer.writerows(rows)
 
     """Write flattened data to a CSV file."""
     with open(full_filename, 'a+', newline='') as csvfile:
