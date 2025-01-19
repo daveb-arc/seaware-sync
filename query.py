@@ -95,8 +95,7 @@ def main():
 
     elif record_type == RecordType.RESERVATION:
 
-      # Process single reservation
-      process_seaware(record_type, record_mode, id_value = 'Reservation|10166')
+      process_salesforce_bookings(record_type, record_mode)
 
       from datetime import datetime, timedelta
 
@@ -331,6 +330,29 @@ def process_salesforce_clients(record_type, record_mode):
 
       with open(full_filename_processed, 'a+', newline='') as processed_file:
         processed_file.write(id_value + ',')
+
+def process_salesforce_bookings(record_type, record_mode):
+    
+  import pandas as pd
+
+  full_filename = 'C:/repo/Salesforce-Exporter-Private/Clients/SEAWARE/Salesforce-Exporter/Clients/SEAWARE/Export/Booking-Prod.csv'
+  fileCheckPath = Path(full_filename)
+  fileCheckExists = fileCheckPath.is_file()
+  if not fileCheckExists:
+     return
+
+  data_frame = get_csv_dataframe(full_filename)
+  if len(data_frame) <= 0:
+    return
+
+  for index, row in data_frame.iterrows():
+
+      booking_number_seaware = row['Booking_Number_Seaware__c']
+      if booking_number_seaware == '':
+         continue
+
+      # Process single reservation
+      process_seaware(record_type, record_mode, id_value = 'Reservation|' + str(booking_number_seaware))
 
 def process_salesforce_agents(record_type, record_mode):
     
