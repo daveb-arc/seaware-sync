@@ -24,6 +24,7 @@ class RecordType(Enum):
     CRUISE = 5
     CABIN = 6
     SHIP = 7
+    RESERVATION_OTHER = 8
 
 class RecordMode(Enum):
     UPDATE = 1
@@ -95,8 +96,6 @@ def main():
 
     elif record_type == RecordType.RESERVATION:
 
-      process_salesforce_bookings(record_type, record_mode)
-
       from datetime import datetime, timedelta
 
       # Get the current time
@@ -129,6 +128,15 @@ def main():
             start_time = query_time.strftime("%Y-%m-%dT%H:%M:00")
 
             process_seaware(record_type, record_mode, start_time, end_time)
+
+      # Process Seaware Reservations
+      full_filename = 'C:/repo/seaware-sync/output_csv/RESERVATION_Booking.csv'
+      process_bookings_other(full_filename, record_type, record_mode)
+
+      # Process Salesforce Flagged Reservations
+      full_filename = 'C:/repo/Salesforce-Exporter-Private/Clients/SEAWARE/Salesforce-Exporter/Clients/SEAWARE/Export/Booking-Prod.csv'
+      process_bookings_salesforce(full_filename, record_type, record_mode)
+      process_bookings_other(full_filename, record_type, record_mode)
 
     else:
       process_seaware(record_type, record_mode, '', '')
@@ -331,11 +339,10 @@ def process_salesforce_clients(record_type, record_mode):
       with open(full_filename_processed, 'a+', newline='') as processed_file:
         processed_file.write(id_value + ',')
 
-def process_salesforce_bookings(record_type, record_mode):
+def process_bookings_salesforce(full_filename, record_type, record_mode):
     
   import pandas as pd
 
-  full_filename = 'C:/repo/Salesforce-Exporter-Private/Clients/SEAWARE/Salesforce-Exporter/Clients/SEAWARE/Export/Booking-Prod.csv'
   fileCheckPath = Path(full_filename)
   fileCheckExists = fileCheckPath.is_file()
   if not fileCheckExists:
@@ -347,12 +354,41 @@ def process_salesforce_bookings(record_type, record_mode):
 
   for index, row in data_frame.iterrows():
 
-      booking_number_seaware = row['Booking_Number_Seaware__c']
-      if booking_number_seaware == '':
-         continue
+    booking_number_seaware = row['Booking_Number_Seaware__c']
+    if booking_number_seaware == '':
 
-      # Process single reservation
-      process_seaware(record_type, record_mode, id_value = 'Reservation|' + str(booking_number_seaware))
+      continue
+
+    # Process single reservation
+    process_seaware(record_type, record_mode, id_value = 'Reservation|' + str(booking_number_seaware))
+
+def process_bookings_other(full_filename, record_type, record_mode):
+    
+  import pandas as pd
+
+  fileCheckPath = Path(full_filename)
+  fileCheckExists = fileCheckPath.is_file()
+  if not fileCheckExists:
+     return
+
+  data_frame = get_csv_dataframe(full_filename)
+  if len(data_frame) <= 0:
+    return
+
+  for index, row in data_frame.iterrows():
+
+    booking_number_seaware = ''
+    if 'Salesforce' in full_filename:
+      booking_number_seaware = row['Booking_Number_Seaware__c']
+    
+    else:
+      booking_number_seaware = row['reservation']
+
+    if booking_number_seaware == '':
+      continue
+
+    # Process single reservation other
+    process_seaware(RecordType.RESERVATION_OTHER, record_mode, id_value = 'Reservation|' + str(booking_number_seaware))
 
 def process_salesforce_agents(record_type, record_mode):
     
@@ -484,6 +520,8 @@ def process_seaware(record_type, record_mode, fromDateTime = None, toDateTime = 
     record_type_value = 'availableCabins'
   elif record_type == RecordType.SHIP:
     record_type_value = 'cabins'
+  elif record_type == RecordType.RESERVATION_OTHER:
+    record_type_value = 'reservation'
 
   headers = login_graphql()
 
@@ -491,7 +529,7 @@ def process_seaware(record_type, record_mode, fromDateTime = None, toDateTime = 
   json_res = fetch_items(record_type, record_mode, fromDateTime, toDateTime, headers, row, id_value=id_value)
   incoming_items = len(json_res.get('data').get(record_type_value))
 
-  if record_type != RecordType.CRUISE and record_type != RecordType.CABIN and record_type != RecordType.SHIP:
+  if record_type != RecordType.CRUISE and record_type != RecordType.CABIN and record_type != RecordType.SHIP and record_type != RecordType.RESERVATION_OTHER:
     incoming_items = len(json_res.get('data').get(record_type_value).get('edges'))
   
   print_log("Initial Query - incoming_items: " + str(incoming_items))     
@@ -499,7 +537,7 @@ def process_seaware(record_type, record_mode, fromDateTime = None, toDateTime = 
     print_log("CAUTION: Initial Query is 500 which is the MAX result set even with paging, reduce query logic.  incoming_items: " + str(incoming_items)) 
 
   if incoming_items > 0:
-    if record_type != RecordType.CRUISE and record_type != RecordType.CABIN and record_type != RecordType.SHIP:
+    if record_type != RecordType.CRUISE and record_type != RecordType.CABIN and record_type != RecordType.SHIP and record_type != RecordType.RESERVATION_OTHER:
       print_log(json_res.get('data').get(record_type_value).get('edges')[0].get('node').get('id'))
 
   page_info = None
@@ -507,7 +545,7 @@ def process_seaware(record_type, record_mode, fromDateTime = None, toDateTime = 
   if record_type_value in json_res['data']: 
     process_record(record_type, record_type_value, record_mode, json_res, row)
 
-    if record_type != RecordType.CRUISE and record_type != RecordType.CABIN and record_type != RecordType.SHIP:
+    if record_type != RecordType.CRUISE and record_type != RecordType.CABIN and record_type != RecordType.SHIP and record_type != RecordType.RESERVATION_OTHER:
       page_info = json_res['data'][record_type_value]['pageInfo']
 
   else:
@@ -530,7 +568,7 @@ def process_seaware(record_type, record_mode, fromDateTime = None, toDateTime = 
     if incoming_items > 0:   
       print_log("Paging Query - incoming_items: " + str(incoming_items))        
 
-      if record_type != RecordType.CRUISE and record_type != RecordType.CABIN and record_type != RecordType.SHIP:
+      if record_type != RecordType.CRUISE and record_type != RecordType.CABIN and record_type != RecordType.SHIP and record_type != RecordType.RESERVATION_OTHER:
         print_log(json_res.get('data').get(record_type_value).get('edges')[0].get('node').get('id'))
         #print_log("cursor: " + cursor + " access_token: " + access_token + " incoming_items: " + str(incoming_items))        
         
@@ -1223,6 +1261,10 @@ def fetch_items(record_type, record_mode, fromDateTime, toDateTime, headers, row
     
     input_query = 'Cabins'
 
+  elif record_type == RecordType.RESERVATION_OTHER:
+
+    input_query = 'ReservationsOther'
+
   query = None
   with open('C:/repo/seaware-sync/queries/get' + input_query + '.graphQL', 'r') as file:
     query = file.read()
@@ -1426,14 +1468,14 @@ def process_record(record_type, record_type_value, record_mode, json_res, row = 
       writer.writerow(flattened_data)
 
   edges = json_res.get('data').get(record_type_value)
-  if record_type != RecordType.CRUISE and record_type != RecordType.CABIN and record_type != RecordType.SHIP:
+  if record_type != RecordType.CRUISE and record_type != RecordType.CABIN and record_type != RecordType.SHIP and record_type != RecordType.RESERVATION_OTHER:
     edges = json_res.get('data').get(record_type_value).get('edges')
 
   access_token = json_res['extensions']['access_token']
 
   da_flatten_list(record_type, record_mode, edges, access_token, row)
 
-  if record_type == RecordType.RESERVATION:
+  if record_type == RecordType.RESERVATION or record_type == RecordType.RESERVATION_OTHER:
     da_flatten_list_bookings(edges, record_type.name + '_Booking', None, None)
 
 def da_flatten_list(record_type, record_mode, json_list, access_token, row = None):
@@ -1444,7 +1486,7 @@ def da_flatten_list(record_type, record_mode, json_list, access_token, row = Non
       
       if isinstance(item, dict):
           
-          if record_type != RecordType.CRUISE and record_type != RecordType.CABIN and record_type != RecordType.SHIP:
+          if record_type != RecordType.CRUISE and record_type != RecordType.CABIN and record_type != RecordType.SHIP and record_type != RecordType.RESERVATION_OTHER:
 
             # Check to clear out automation created record
             id_value = item['node']['id']
@@ -1537,6 +1579,16 @@ def da_flatten_list_bookings(json_list, key, reservationKey, guestKey):
 
       csv_data.append(flattened_item)
 
+      if 'result_key' in flattened_items:
+        reservationKey = flattened_items['result_key']
+
+        filename = RecordType.RESERVATION_OTHER.name + '_history'
+        if not json_list.get('result') == None and not json_list.get('result').get('history') == None:
+          changes = json_list.get('result').get('history')
+          if len(changes) > 0:
+            for index, item in enumerate(changes):
+              da_flatten_list_bookings(item, filename, reservationKey, guestKey)
+
   else:
 
     for index, item in enumerate(json_list):
@@ -1605,12 +1657,12 @@ def da_flatten_list_bookings(json_list, key, reservationKey, guestKey):
               if len(referralSource) > 0:
                 da_flatten_list_bookings(referralSource, filename, reservationKey, guestKey)
 
-            filename = RecordType.RESERVATION.name + '_IndependentAir'
+            filename = RecordType.RESERVATION.name + '_ReferralSource'
             #check_csv(filename)
-            if not item.get('node') == None and not item.get('node').get('independentAir') == None:
-              air = item.get('node').get('independentAir')
-              if len(air) > 0:
-                da_flatten_list_bookings(air, filename, reservationKey, guestKey)
+            if not item.get('node') == None and not item.get('node').get('referralSource') == None:
+              referralSource = item.get('node').get('referralSource')
+              if len(referralSource) > 0:
+                da_flatten_list_bookings(referralSource, filename, reservationKey, guestKey)
 
             filename = RecordType.RESERVATION.name + '_Groups'
             #check_csv(filename)

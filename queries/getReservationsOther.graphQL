@@ -1,0 +1,38 @@
+query GetReservationsOther {
+  reservation(id: "ID_VALUE_TOKEN") {
+    result {
+        id key
+        currency {
+            key
+    }
+      history {
+        currentState {
+          ownership
+          contact {
+            lastName
+          }
+          lastUpdated
+        }
+        userInitiated
+        dateTime
+        subject
+        userType
+        ident
+
+        changedBy {
+          __typename
+          ... on User {
+            login
+            id
+          }
+          ... on Client {
+            firstName lastName
+          }
+          ... on TravelAgent {
+            firstName lastName
+          }
+        }
+      }
+    }
+  }
+}
