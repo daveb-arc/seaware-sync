@@ -130,7 +130,7 @@ def main():
             process_seaware(record_type, record_mode, start_time, end_time)
 
       # Process Seaware Reservations
-      full_filename = 'C:/repo/seaware-sync/output_csv/RESERVATION_Booking.csv'
+      full_filename = 'C:/repo/seaware-sync/output_csv/RESERVATION_InvoiceTotals.csv'
       process_bookings_other(full_filename, record_type, record_mode)
 
       # Process Salesforce Flagged Reservations
@@ -1746,7 +1746,7 @@ def flatten_json_results(y):
 def clean_row_values(dictionary_data):
 
   #print(type(dictionary_data))
-  updated_list = [item.replace("\n", " ") if isinstance(item, str) else item for item in dictionary_data]
+  updated_list = [item.replace("\n", " ").replace("\x92", " ") if isinstance(item, str) else item for item in dictionary_data]
 
   return updated_list
 
