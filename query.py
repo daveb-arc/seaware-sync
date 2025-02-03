@@ -313,7 +313,11 @@ def process_salesforce_clients(record_type, record_mode):
         if len(json_res.get('data').get('clients').get('edges')) <= 0:
 
           # Attempt to insert - Seaware DB will fail call if altid already set on a record
-          insert_row_client(record_type, RecordMode.INSERT, row)
+          response = insert_row_client(record_type, RecordMode.INSERT, row)
+
+          data = response.json()
+          if 'errors' in data:
+            continue
 
           # Query to setup output file for processing in Excel PowerQuery update to SF
           json_res = process_seaware(record_type, RecordMode.QUERY, '', '', row)
@@ -421,7 +425,11 @@ def process_salesforce_agents(record_type, record_mode):
       if len(json_res.get('data').get('travelAgents').get('edges')) <= 0:
 
         # Attempt to insert - Seaware DB will fail call if altid already set on a record
-        insert_row_agent(record_type, RecordMode.INSERT, row)
+        response = insert_row_agent(record_type, RecordMode.INSERT, row)
+
+        data = response.json()
+        if 'errors' in data:
+          continue
 
         # Query to setup output file for processing in Excel PowerQuery update to SF
         json_res = process_seaware(record_type, RecordMode.QUERY, '', '', row)
@@ -488,7 +496,11 @@ def process_salesforce_agencies(record_type, record_mode):
       if len(json_res.get('data').get('agencies').get('edges')) <= 0:
 
         # Attempt to insert - Seaware DB will fail call if altid already set on a record
-        insert_row_agency(record_type, RecordMode.INSERT, row)
+        response = insert_row_agency(record_type, RecordMode.INSERT, row)
+
+        data = response.json()
+        if 'errors' in data:
+          continue
 
         # Query to setup output file for processing in Excel PowerQuery update to SF
         json_res = process_seaware(record_type, RecordMode.QUERY, '', '', row)
@@ -645,6 +657,21 @@ def get_safe_string(string_value):
 
 #####################################################
 #
+# get_safe_phone - 
+#
+#####################################################
+def get_safe_phone(string_value):
+
+  phone_number_string = get_safe_string(string_value)
+  found_alpha = any(char.isalpha() for char in phone_number_string)
+
+  if found_alpha:
+    return ''
+  
+  return phone_number_string
+
+#####################################################
+#
 # update_record - update a specific record by id, update isInternal on all records because that is
 #   used as the workaround flag for paging
 #
@@ -717,16 +744,16 @@ def insert_row_client(record_type, record_mode, row):
   query = query.replace('EMAIL_VALUE', safeValue)
 
   safeValue = ''
-  if not pd.isna(row['Phone']) and not get_safe_string(str(row['Phone'])) == '':
-    safeValue = get_safe_string(str(row['Phone']))
+  if not pd.isna(row['Phone']) and not get_safe_phone(str(row['Phone'])) == '':
+    safeValue = get_safe_phone(str(row['Phone']))
     primary_phonenumber_json = '{type:{key:"PRIMARY"} intlCode:1 number:"PRIMARY_PHONENUMBER"}'
     query = query.replace('PRIMARY_PHONENUMBER', primary_phonenumber_json)
   
   query = query.replace('PRIMARY_PHONENUMBER', safeValue)
 
   safeValue = ''
-  if not pd.isna(row['MobilePhone']) and not get_safe_string(str(row['MobilePhone'])) == '':
-    safeValue = get_safe_string(str(row['MobilePhone']))
+  if not pd.isna(row['MobilePhone']) and not get_safe_phone(str(row['MobilePhone'])) == '':
+    safeValue = get_safe_phone(str(row['MobilePhone']))
     mobile_phonenumber_json = '{type:{key:"MOBILE"} intlCode:1 number:"MOBILE_PHONENUMBER"}'
     query = query.replace('MOBILE_PHONENUMBER', mobile_phonenumber_json)
   
