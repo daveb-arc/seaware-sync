@@ -1230,6 +1230,9 @@ def move_specific_children_to_parent(data, target_parent_keys):
   - dict: The updated dictionary with specified children moved to the parent level.
   """
 
+  if 'errors' in data:
+    return data
+
   nodes = data.get('data').get('reservationHistory').get('edges')
   for node in nodes:
 
