@@ -346,6 +346,7 @@ def process_salesforce_clients(record_type, record_mode):
 def process_bookings_salesforce(full_filename, record_type, record_mode):
     
   import pandas as pd
+  import math
 
   fileCheckPath = Path(full_filename)
   fileCheckExists = fileCheckPath.is_file()
@@ -359,12 +360,12 @@ def process_bookings_salesforce(full_filename, record_type, record_mode):
   for index, row in data_frame.iterrows():
 
     booking_number_seaware = row['Booking_Number_Seaware__c']
-    if booking_number_seaware == '':
+    if booking_number_seaware == '' or math.isnan(booking_number_seaware):
 
       continue
 
     # Process single reservation
-    process_seaware(record_type, record_mode, id_value = 'Reservation|' + str(booking_number_seaware))
+    process_seaware(record_type, record_mode, id_value = 'Reservation|' + str(math.floor(booking_number_seaware)))
 
 def process_bookings_other(full_filename, record_type, record_mode):
     
@@ -539,6 +540,9 @@ def process_seaware(record_type, record_mode, fromDateTime = None, toDateTime = 
 
   # Initial request - no cursor
   json_res = fetch_items(record_type, record_mode, fromDateTime, toDateTime, headers, row, id_value=id_value)
+  if "errors" in json_res:
+    return json_res
+  
   incoming_items = len(json_res.get('data').get(record_type_value))
 
   if record_type != RecordType.CRUISE and record_type != RecordType.CABIN and record_type != RecordType.SHIP and record_type != RecordType.RESERVATION_OTHER:
