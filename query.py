@@ -143,6 +143,62 @@ def main():
 
   exit
 
+# Function to recursively process the JSON and create CSV for dictionaries and lists
+def write_csv_for_level(data, level, parent_key="", depth=1):
+
+    # If the data is neither a dictionary nor a list, skip it
+    if not isinstance(data, (dict, list)):
+        return
+    
+    # Prepare the filename based on level and parent key
+    path = f"C:/repo/seaware-sync/output_csv/"
+    filename = f"{path}level_{depth}_{parent_key}.csv" if parent_key else f"{path}level_{depth}.csv"
+    
+    # If data is a dictionary, flatten it
+    rows = []
+    if isinstance(data, dict):
+        row = {}
+        for key, value in data.items():
+            if isinstance(value, (dict, list)):
+                # If the value is a dictionary or list, serialize it into a string
+                row[key] = json.dumps(value)
+            else:
+                row[key] = value
+        rows.append(row)
+
+    # If data is a list, treat each item as a row
+    elif isinstance(data, list):
+        for item in data:
+            row = {}
+            if isinstance(item, (dict, list)):
+                row["value"] = json.dumps(item)  # Serialize any dict or list into a string
+            else:
+                row["value"] = item
+            rows.append(row)
+
+    # Write the rows to a CSV file
+    if rows:
+        with open(filename, mode='w', newline='') as file:
+            # Get fieldnames from the first row keys
+            fieldnames = rows[0].keys()
+            writer = csv.DictWriter(file, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(rows)
+        
+        print(f"CSV file for level {depth} written to {filename}")
+    
+    # Recursively process nested dictionaries and lists
+    if isinstance(data, dict):
+        for key, value in data.items():
+            if isinstance(value, (dict, list)):
+                # Call recursively for each nested dictionary or list
+                write_csv_for_level(value, level, parent_key=key, depth=depth+1)
+    elif isinstance(data, list):
+        for index, item in enumerate(data):
+            if isinstance(item, (dict, list)):
+                # Call recursively for each item in the list if it's a dictionary or list
+                write_csv_for_level(item, level, parent_key=f"{parent_key}_item{index+1}", depth=depth+1)
+
 #####################################################
 #
 # get_graphql_url - 
@@ -596,6 +652,12 @@ def process_seaware(record_type, record_mode, fromDateTime = None, toDateTime = 
         print_log("unknown query type")       
 
   logout_graphql(headers)
+
+  # Start the process with the root JSON data
+#  if 'reservationHistory' in json_res.get('data'):
+#    write_csv_for_level(json_res.get('data').get('reservationHistory').get('edges'), level=1)
+#  else:
+#    write_csv_for_level(json_res.get('data').get('reservation').get('result'), level=1)
 
   return json_res
 
@@ -1661,9 +1723,9 @@ def da_flatten_list_bookings(json_list, key, reservationKey, guestKey):
                   da_flatten_list_bookings(guest['voyages'][0]['pkg'], filename, reservationKey, guestKey)
 
                 filename = RecordType.RESERVATION.name + '_CabinAttributes'
-                if len(guest['voyages']) > 0 and not guest['voyages'][0]['cabinChain'] == None:
-                  if len(guest['voyages'][0]['cabinChain']) > 0:
-                    da_flatten_list_bookings(guest['voyages'][0]['cabinChain'][0]['cabin']['attributes'], filename, reservationKey, guestKey)
+                if len(guest['voyages']) > 0 and not guest['voyages'][0]['cabinAttributes'] == None:
+                  if len(guest['voyages'][0]['cabinAttributes']) > 0:
+                    da_flatten_list_bookings(guest['voyages'][0]['cabinAttributes'], filename, reservationKey, guestKey)
 
                 filename = RecordType.RESERVATION.name + '_BorderForms'
                 if not guest['client'] == None and not guest['client']['borderForms'] == None:

@@ -299,6 +299,19 @@ fragment ReservationFragment on Reservation {
         voyages {
             recordId
             occupancy
+
+            cabinAttributes {
+                attribute {
+                    key
+                    id
+                    name
+                    type {
+                        key
+                        id
+                    }
+                }
+            }
+
             guest {
                 seqN
                 client {
