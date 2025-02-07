@@ -102,7 +102,7 @@ def main():
       now = datetime.now()
 
       # Transfer and Flight linking happens in 2 different change events which is currently driven by SyncDate__c on Item which takes a day change to be updated the 2nd time
-      number_days = 1
+      number_days = 0
 
       delta_days_ago = now - timedelta(days=number_days)
 
@@ -416,12 +416,15 @@ def process_bookings_salesforce(full_filename, record_type, record_mode):
   for index, row in data_frame.iterrows():
 
     booking_number_seaware = row['Booking_Number_Seaware__c']
-    if booking_number_seaware == '' or math.isnan(booking_number_seaware):
+    if booking_number_seaware == '' or (not isinstance(booking_number_seaware, str) and math.isnan(booking_number_seaware)):
 
       continue
 
     # Process single reservation
-    process_seaware(record_type, record_mode, id_value = 'Reservation|' + str(math.floor(booking_number_seaware)))
+    if not isinstance(booking_number_seaware, str):
+      booking_number_seaware = str(math.floor(booking_number_seaware))
+
+    process_seaware(record_type, record_mode, id_value = 'Reservation|' + booking_number_seaware)
 
 def process_bookings_other(full_filename, record_type, record_mode):
     
