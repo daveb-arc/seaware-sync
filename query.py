@@ -1884,7 +1884,14 @@ def write_to_csv(data, filename):
         if not fileCheckExists:
 
           # Write header
-          writer.writerow(data[0].keys())
+          row_headers = data[0].keys()
+          for data_row in data:
+
+            if len(row_headers) < len(data_row):
+
+              row_headers = data_row.keys()
+
+          writer.writerow(row_headers)
 
         # Write rows
         for row in data:

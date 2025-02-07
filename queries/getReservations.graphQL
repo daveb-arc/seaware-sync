@@ -25,12 +25,17 @@ fragment ReservationFragment on Reservation {
     }
 
     invoice {
-      amount
-      type {
-        id
-      }
-      guest { seqN }
-      promotion { key name }
+        amount
+        type {
+            id
+        }
+        guest { 
+            seqN
+        }
+        promotion { 
+            key
+            name
+        }
     }
 
     invoiceTotals {
