@@ -102,7 +102,7 @@ def main():
       now = datetime.now()
 
       # Transfer and Flight linking happens in 2 different change events which is currently driven by SyncDate__c on Item which takes a day change to be updated the 2nd time
-      number_days = 1
+      number_days = 0
 
       delta_days_ago = now - timedelta(days=number_days)
 
@@ -614,6 +614,8 @@ def process_seaware(record_type, record_mode, fromDateTime = None, toDateTime = 
   if incoming_items > 0:
     if record_type != RecordType.CRUISE and record_type != RecordType.CABIN and record_type != RecordType.SHIP and record_type != RecordType.RESERVATION_OTHER:
       print_log(json_res.get('data').get(record_type_value).get('edges')[0].get('node').get('id'))
+    elif record_type == RecordType.RESERVATION_OTHER:
+      print_log(json_res['data']['reservation']['result']['id'])
 
   page_info = None
 
@@ -1572,7 +1574,8 @@ def process_record(record_type, record_type_value, record_mode, json_res, row = 
 
   access_token = json_res['extensions']['access_token']
 
-  da_flatten_list(record_type, record_mode, edges, access_token, row)
+  if record_type != RecordType.RESERVATION_OTHER:
+    da_flatten_list(record_type, record_mode, edges, access_token, row)
 
   if record_type == RecordType.RESERVATION or record_type == RecordType.RESERVATION_OTHER:
     da_flatten_list_bookings(edges, record_type.name + '_Booking', None, None)
@@ -1734,6 +1737,13 @@ def da_flatten_list_bookings(json_list, key, reservationKey, guestKey):
                 if not guest['client'] == None and not guest['client']['borderForms'] == None:
                   if len(guest['client']['borderForms']) > 0:
                     da_flatten_list_bookings(guest['client']['borderForms'], filename, reservationKey, guestKey)
+
+            filename = RecordType.RESERVATION.name + '_UserNotes'
+            #check_csv(filename)
+            if not item.get('node') == None and not item.get('node').get('userNotes') == None:
+              records = item.get('node').get('userNotes')
+              if len(records) > 0:
+                da_flatten_list_bookings(records, filename, reservationKey, guestKey)
 
             filename = RecordType.RESERVATION.name + '_Promos'
             #check_csv(filename)

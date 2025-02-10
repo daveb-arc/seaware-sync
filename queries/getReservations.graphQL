@@ -479,6 +479,18 @@ fragment ReservationFragment on Reservation {
         }
     }
 
+    userNotes {
+        recordId
+        createdAt
+        comment
+        subject {
+            key
+            subject
+            important
+        }
+        user
+    }
+
 }
 
 query GetChangedReservations(
