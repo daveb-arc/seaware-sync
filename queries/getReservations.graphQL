@@ -305,18 +305,6 @@ fragment ReservationFragment on Reservation {
             recordId
             occupancy
 
-            cabinAttributes {
-                attribute {
-                    key
-                    id
-                    name
-                    type {
-                        key
-                        id
-                    }
-                }
-            }
-
             guest {
                 seqN
                 client {
@@ -389,6 +377,17 @@ fragment ReservationFragment on Reservation {
                     sailRefIdent
                     port {
                         key
+                    }
+                }
+            }
+            cabinAttributes {
+                attribute {
+                    key
+                    id
+                    name
+                    type {
+                        key
+                        id
                     }
                 }
             }
