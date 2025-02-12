@@ -102,7 +102,7 @@ def main():
       now = datetime.now()
 
       # Transfer and Flight linking happens in 2 different change events which is currently driven by SyncDate__c on Item which takes a day change to be updated the 2nd time
-      number_days = 1
+      number_days = 0
 
       delta_days_ago = now - timedelta(days=number_days)
 
@@ -1124,6 +1124,14 @@ def update_row_agency(record_type, record_mode, row, id_value):
   if agency_type == 'A' or agency_type == 'Y' or agency_type == 'P':
     fp_rat_gross = 'true'
 
+  force_gross = row['Account.Force_Gross_Pay__c']
+  if force_gross:
+    fp_rat_gross = 'true'
+
+  force_net = row['Account.Force_NET_Pay__c']
+  if force_net:
+      fp_rat_gross = 'false'
+ 
   query = query.replace('FPRATGROSS_VALUE', fp_rat_gross)
 
   iata = ''
