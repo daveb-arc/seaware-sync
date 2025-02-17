@@ -14,15 +14,6 @@ mutation updateRecord {
         guestType: {
           key: "GUESTTYPE_VALUE"
         }
-        classifications:{
-          dateRange: {
-            from: "2024-01-01"
-            to: "2099-01-01"
-          }
-          classification:{
-            key:"SAILED,SAILED_VALUE"
-          }
-        }
         phones: [
           PRIMARY_PHONENUMBER
           ,

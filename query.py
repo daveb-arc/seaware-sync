@@ -924,12 +924,6 @@ def update_row_client(record_type, record_mode, row, id_value):
   else:
     query = query.replace('GENDER_VALUE', safeValue)
      
-  safeValue = '0'
-  if not pd.isna(row['No_of_Bookings__c']) and not str(row['No_of_Bookings__c']).strip() == '':
-    safeValue = round(row['No_of_Bookings__c'])
-
-  query = query.replace('SAILED_VALUE', str(safeValue))
-
   safeValue = 'REGULAR'
   # Need to exactly map the Salesforce Passenger Type values to the Guest Type values in Seaware
   #if not pd.isna(row['Passenger_Type__c']) and not str(row['Passenger_Type__c']).strip() == '':
