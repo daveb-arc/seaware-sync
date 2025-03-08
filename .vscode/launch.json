@@ -17,6 +17,7 @@
 //                "CLIENT"
 //                ,"SFPUSH"
                 "AGENCY"
+//                ,"QUERY"
                 ,"SFPUSH"
 ]
         }

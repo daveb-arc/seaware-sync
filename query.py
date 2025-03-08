@@ -8,7 +8,6 @@ from enum import Enum
 from datetime import date
 
 #GRAPHQL_URL = 'https://testreservations.uncruise.com:3000/graphql'
-#GRAPHQL_URL = 'https://devreservations.uncruise.com:3000/graphql'
 GRAPHQL_URL = 'https://reservations.uncruise.com:3000/graphql'
 GRAPHQL_PRIVATEURL = 'http://172.16.120.87:3000/graphql'
 GRAPHQL_PRIVATEURL2 = 'http://172.16.120.87:3000/graphql'
@@ -1579,6 +1578,9 @@ def process_record(record_type, record_type_value, record_mode, json_res, row = 
   if record_type != RecordType.RESERVATION_OTHER:
     da_flatten_list(record_type, record_mode, edges, access_token, row)
 
+  if record_type == RecordType.AGENCY:
+    da_flatten_list_agencies(edges, record_type.name + '_Agency', None, None)
+
   if record_type == RecordType.RESERVATION or record_type == RecordType.RESERVATION_OTHER:
     da_flatten_list_bookings(edges, record_type.name + '_Booking', None, None)
 
@@ -1667,6 +1669,73 @@ def da_flatten_list(record_type, record_mode, json_list, access_token, row = Non
 
 def get_values_by_key_substring(d, substring):
     return [value for key, value in d.items() if substring in key]
+
+def da_flatten_list_agencies(json_list, key, agencyKey, agentKey):
+
+  # Create a list of dictionaries for CSV writing
+  csv_data = []
+
+  if isinstance(json_list, dict):
+      
+      #name = json_list.get('name')
+
+      flattened_items = flatten_json_lists(json_list)
+      custom_items = {'agency': agencyKey}
+      flattened_item = {**custom_items, **flattened_items}
+
+      csv_data.append(flattened_item)
+
+      if 'result_key' in flattened_items:
+        agencyKey = flattened_items['result_key']
+
+        filename = RecordType.RESERVATION_OTHER.name + '_history'
+        if not json_list.get('result') == None and not json_list.get('result').get('history') == None:
+          changes = json_list.get('result').get('history')
+          if len(changes) > 0:
+            for index, item in enumerate(changes):
+              da_flatten_list_agencies(item, filename, agencyKey, agentKey)
+
+  else:
+
+    for index, item in enumerate(json_list):
+        
+        if isinstance(item, dict):
+            
+            flattened_items = flatten_json_lists(item)
+
+            if next(iter(flattened_items.values())) == None:
+                continue
+            
+            if 'node_key' in flattened_items:
+              agencyKey = flattened_items['node_key']
+
+            agent_ids = get_values_by_key_substring(flattened_items, "agent_id")
+            if len(agent_ids) > 0:
+              agentKey = agent_ids[len(agent_ids) - 1]
+
+            custom_items = {'index': index, 'agency': agencyKey, 'agent': agentKey}
+
+            flattened_item = {**custom_items, **flattened_items}
+
+            csv_data.append(flattened_item)
+
+            if not item.get('node') == None and not item.get('node').get('agents') == None:
+              agents = item.get('node').get('agents')
+              da_flatten_list_agencies(agents, RecordType.RESERVATION.name + '_Agents', agencyKey, agentKey)
+
+              for agent in agents:
+
+                da_flatten_list_agencies(agent['transfer'], RecordType.RESERVATION.name + '_Transfers', agencyKey, agentKey)
+
+            filename = RecordType.AGENCY.name + '_Classifications'
+            #check_csv(filename)
+            if not item.get('node') == None and not item.get('node').get('classifications') == None:
+              records = item.get('node').get('classifications')
+              if len(records) > 0:
+                da_flatten_list_agencies(records, filename, agencyKey, agentKey)
+
+  # Write to CSV file named after the key
+  write_to_csv(csv_data, f"{key}.csv")
 
 def da_flatten_list_bookings(json_list, key, reservationKey, guestKey):
 

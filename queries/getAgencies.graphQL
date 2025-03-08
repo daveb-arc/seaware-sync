@@ -33,6 +33,14 @@ query getAgencies(
                   name
                 }
               }
+              classifications {
+                classification {
+                  name
+                  id
+                  code
+                  key
+                }
+              }
             }
             cursor
         }
