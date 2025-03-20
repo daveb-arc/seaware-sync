@@ -101,7 +101,7 @@ def main():
       now = datetime.now()
 
       # Transfer and Flight linking happens in 2 different change events which is currently driven by SyncDate__c on Item which takes a day change to be updated the 2nd time
-      number_days = 1
+      number_days = 0.2
 
       delta_days_ago = now - timedelta(days=number_days)
 
@@ -428,6 +428,7 @@ def process_bookings_salesforce(full_filename, record_type, record_mode):
 def process_bookings_other(full_filename, record_type, record_mode):
     
   import pandas as pd
+  import math
 
   fileCheckPath = Path(full_filename)
   fileCheckExists = fileCheckPath.is_file()
@@ -447,8 +448,13 @@ def process_bookings_other(full_filename, record_type, record_mode):
     else:
       booking_number_seaware = row['reservation']
 
-    if booking_number_seaware == '':
+    if booking_number_seaware == '' or (not isinstance(booking_number_seaware, str) and math.isnan(booking_number_seaware)):
+
       continue
+
+    # Process single reservation
+    if not isinstance(booking_number_seaware, str):
+      booking_number_seaware = str(math.floor(booking_number_seaware))
 
     # Process single reservation other
     process_seaware(RecordType.RESERVATION_OTHER, record_mode, id_value = 'Reservation|' + str(booking_number_seaware))
@@ -1926,7 +1932,7 @@ def flatten_json_results(y):
 def clean_row_values(dictionary_data):
 
   #print(type(dictionary_data))
-  updated_list = [item.replace("\n", " ").replace("\x92", " ") if isinstance(item, str) else item for item in dictionary_data]
+  updated_list = [item.replace("\u202c", " ").replace("\u202d", " ").replace("\n", " ").replace("\x92", " ") if isinstance(item, str) else item for item in dictionary_data]
 
   return updated_list
 
@@ -1976,7 +1982,8 @@ def write_to_csv(data, filename):
 
         # Write rows
         for row in data:
-            writer.writerow(clean_row_values(row.values()))
+            cleaned_values = clean_row_values(row.values());
+            writer.writerow(cleaned_values);
 
 #    print_log(f"Written {full_filename}")
 

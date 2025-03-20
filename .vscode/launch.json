@@ -11,14 +11,14 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "args": [
-//                "CRUISE"
-//                "RESERVATION"
-//                ,"QUERY"
+   //             "CRUISE"
+                "RESERVATION"
+                ,"QUERY"
 //                "CLIENT"
 //                ,"SFPUSH"
-                "AGENCY"
+//                "AGENCY"
 //                ,"QUERY"
-                ,"SFPUSH"
+//                ,"SFPUSH"
 ]
         }
     ]
