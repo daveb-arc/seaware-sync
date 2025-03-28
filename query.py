@@ -106,7 +106,7 @@ def main():
       delta_days_ago = now - timedelta(days=number_days)
 
       # Query by hour because as of 1/17/25 the day query is taking too long, investigating but until then do hour query
-      if number_days < 90:
+      if number_days <= 90:
 
         # Iterate from now to delta days ago, in 1-hour steps
         query_time = now
@@ -1932,9 +1932,13 @@ def flatten_json_results(y):
 def clean_row_values(dictionary_data):
 
   #print(type(dictionary_data))
-  updated_list = [item.replace("\u202c", " ").replace("\u202d", " ").replace("\n", " ").replace("\x92", " ") if isinstance(item, str) else item for item in dictionary_data]
+  updated_list = [item.replace('\u200c', '').replace("\u202c", " ").replace("\u202d", " ").replace("\n", " ").replace("\x92", " ") if isinstance(item, str) else item for item in dictionary_data]
 
-  return updated_list
+  import unicodedata
+  normalized_list = [unicodedata.normalize('NFKD', item) if isinstance(item, str) else item
+        for item in updated_list]
+    
+  return normalized_list
 
 def write_to_csv(data, filename):
     
