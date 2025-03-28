@@ -7,6 +7,12 @@ query getAvailableVoyages {
   }
   }) {
     
+    pkg {   
+      type {
+        key
+        name
+      }
+    }
  		sail {
       
       from {
