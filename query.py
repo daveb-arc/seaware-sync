@@ -347,6 +347,8 @@ def process_salesforce_clients(record_type, record_mode):
 
   for index, row in data_frame.iterrows():
 
+      row = row.apply(lambda x: x.strip("b'") if isinstance(x, str) else x)
+
       if row['Contact_Type__c'] != 'Guest':
          continue
 
@@ -415,6 +417,8 @@ def process_bookings_salesforce(full_filename, record_type, record_mode):
   queries_remaining = 500
   for index, row in data_frame.iterrows():
 
+    row = row.apply(lambda x: x.strip("b'") if isinstance(x, str) else x)
+
     booking_number_seaware = row['Booking_Number_Seaware__c']
     if booking_number_seaware == '' or (not isinstance(booking_number_seaware, str) and math.isnan(booking_number_seaware)):
 
@@ -446,6 +450,8 @@ def process_bookings_other(full_filename, record_type, record_mode):
 
   queries_remaining = 500
   for index, row in data_frame.iterrows():
+
+    row = row.apply(lambda x: x.strip("b'") if isinstance(x, str) else x)
 
     booking_number_seaware = ''
     if 'Salesforce' in full_filename:
@@ -490,6 +496,8 @@ def process_salesforce_agents(record_type, record_mode):
         processed_ids = file.read()
 
   for index, row in data_frame.iterrows():
+
+      row = row.apply(lambda x: x.strip("b'") if isinstance(x, str) else x)
 
       if row['Contact_Type__c'] != 'Representative':
          continue
@@ -561,6 +569,8 @@ def process_salesforce_agencies(record_type, record_mode):
         processed_ids = file.read()
 
   for index, row in data_frame.iterrows():
+
+      row = row.apply(lambda x: x.strip("b'") if isinstance(x, str) else x)
 
       if row['Contact_Type__c'] != 'Representative':
          continue
