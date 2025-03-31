@@ -412,6 +412,7 @@ def process_bookings_salesforce(full_filename, record_type, record_mode):
   if len(data_frame) <= 0:
     return
 
+  queries_remaining = 500
   for index, row in data_frame.iterrows():
 
     booking_number_seaware = row['Booking_Number_Seaware__c']
@@ -424,6 +425,10 @@ def process_bookings_salesforce(full_filename, record_type, record_mode):
       booking_number_seaware = str(math.floor(booking_number_seaware))
 
     process_seaware(record_type, record_mode, id_value = 'Reservation|' + booking_number_seaware)
+
+    queries_remaining -= 1
+    if queries_remaining <= 0:
+      break
 
 def process_bookings_other(full_filename, record_type, record_mode):
     
@@ -439,6 +444,7 @@ def process_bookings_other(full_filename, record_type, record_mode):
   if len(data_frame) <= 0:
     return
 
+  queries_remaining = 500
   for index, row in data_frame.iterrows():
 
     booking_number_seaware = ''
@@ -446,7 +452,7 @@ def process_bookings_other(full_filename, record_type, record_mode):
       booking_number_seaware = row['Booking_Number_Seaware__c']
     
     else:
-      booking_number_seaware = row['reservation']
+      booking_number_seaware = clean_value(row['reservation'])
 
     if booking_number_seaware == '' or (not isinstance(booking_number_seaware, str) and math.isnan(booking_number_seaware)):
 
@@ -458,6 +464,10 @@ def process_bookings_other(full_filename, record_type, record_mode):
 
     # Process single reservation other
     process_seaware(RecordType.RESERVATION_OTHER, record_mode, id_value = 'Reservation|' + str(booking_number_seaware))
+
+    queries_remaining -= 1
+    if queries_remaining <= 0:
+      break
 
 def process_salesforce_agents(record_type, record_mode):
     
@@ -1928,6 +1938,10 @@ def flatten_json_results(y):
 
     flatten(y)
     return out
+
+def clean_value(value):
+
+  return value.strip("b'")
 
 def clean_row_values(dictionary_data):
 
