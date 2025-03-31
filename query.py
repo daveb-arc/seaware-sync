@@ -1932,12 +1932,14 @@ def flatten_json_results(y):
 def clean_row_values(dictionary_data):
 
   #print(type(dictionary_data))
-  updated_list = [item.replace('\u200c', '').replace("\u202c", " ").replace("\u202d", " ").replace("\n", " ").replace("\x92", " ") if isinstance(item, str) else item for item in dictionary_data]
+  updated_list = [item.replace('\u0308', '').replace('\u200c', '').replace("\u202c", " ").replace("\u202d", " ").replace("\n", " ").replace("\x92", " ") if isinstance(item, str) else item for item in dictionary_data]
+
+  encoded_list = [str(item).encode('utf-8') if item is not None else None for item in updated_list]
 
   import unicodedata
   normalized_list = [unicodedata.normalize('NFKD', item) if isinstance(item, str) else item
-        for item in updated_list]
-    
+        for item in encoded_list]
+  
   return normalized_list
 
 def write_to_csv(data, filename):
@@ -1986,8 +1988,8 @@ def write_to_csv(data, filename):
 
         # Write rows
         for row in data:
-            cleaned_values = clean_row_values(row.values());
-            writer.writerow(cleaned_values);
+            cleaned_values = clean_row_values(row.values())
+            writer.writerow(cleaned_values)
 
 #    print_log(f"Written {full_filename}")
 
