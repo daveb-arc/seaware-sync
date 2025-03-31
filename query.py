@@ -1951,7 +1951,11 @@ def flatten_json_results(y):
 
 def clean_value(value):
 
-  return value.strip("b'")
+  cleaned_value = value
+  if isinstance(value, str):
+      cleaned_value = value.lstrip("b'").rstrip("'")
+
+  return cleaned_value
 
 def clean_row_values(dictionary_data):
 
