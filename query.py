@@ -1960,6 +1960,8 @@ def clean_row_values(dictionary_data):
 
   encoded_list = [str(item).encode('utf-8') if item is not None else None for item in updated_list]
 
+  encoded_list = [str(item).strip("b'") if item is not None else None for item in updated_list]
+
   import unicodedata
   normalized_list = [unicodedata.normalize('NFKD', item) if isinstance(item, str) else item
         for item in encoded_list]
