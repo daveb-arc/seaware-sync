@@ -101,7 +101,7 @@ def main():
       now = datetime.now()
 
       # Transfer and Flight linking happens in 2 different change events which is currently driven by SyncDate__c on Item which takes a day change to be updated the 2nd time
-      number_days = 0.2
+      number_days = 0
 
       delta_days_ago = now - timedelta(days=number_days)
 
@@ -1817,6 +1817,7 @@ def da_flatten_list_bookings(json_list, key, reservationKey, guestKey):
               da_flatten_list_bookings(guests, RecordType.RESERVATION.name + '_Guests', reservationKey, guestKey)
 
               for guest in guests:
+  #              da_flatten_list_bookings(guest['hotels'], RecordType.RESERVATION.name + '_Hotels', reservationKey, guestKey)
                 da_flatten_list_bookings(guest['voyages'], RecordType.RESERVATION.name + '_Voyages', reservationKey, guestKey)
                 da_flatten_list_bookings(guest['transfer'], RecordType.RESERVATION.name + '_Transfers', reservationKey, guestKey)
                 da_flatten_list_bookings(guest['addons'], RecordType.RESERVATION.name + '_AddOns', reservationKey, guestKey)
@@ -1834,6 +1835,20 @@ def da_flatten_list_bookings(json_list, key, reservationKey, guestKey):
                 if not guest['client'] == None and not guest['client']['borderForms'] == None:
                   if len(guest['client']['borderForms']) > 0:
                     da_flatten_list_bookings(guest['client']['borderForms'], filename, reservationKey, guestKey)
+
+            filename = RecordType.RESERVATION.name + '_Flights'
+            #check_csv(filename)
+            if not item.get('node') == None and not item.get('node').get('independentAir') == None:
+              flights = item.get('node').get('independentAir')
+              if len(flights) > 0:
+                da_flatten_list_bookings(flights, filename, reservationKey, guestKey)
+
+            filename = RecordType.RESERVATION.name + '_Hotels'
+            #check_csv(filename)
+            if not item.get('node') == None and not item.get('node').get('hotels') == None:
+              hotels = item.get('node').get('hotels')
+              if len(hotels) > 0:
+                da_flatten_list_bookings(hotels, filename, reservationKey, guestKey)
 
             filename = RecordType.RESERVATION.name + '_UserNotes'
             #check_csv(filename)

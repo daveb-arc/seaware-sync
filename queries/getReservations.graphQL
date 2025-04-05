@@ -450,6 +450,21 @@ fragment ReservationFragment on Reservation {
       name
     }
 
+    hotels {
+        name
+        dateRange {
+            from
+            to
+        }
+        hotel {
+            name
+            key
+            id
+            checkIn
+            checkOut
+        }
+    }
+
     independentAir {
         guest {
             client {
