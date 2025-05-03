@@ -1864,6 +1864,24 @@ def da_flatten_list_bookings(json_list, key, reservationKey, guestKey):
               if len(invoices) > 0:
                 da_flatten_list_bookings(invoices, filename, reservationKey, guestKey)
 
+            filename = RecordType.RESERVATION.name + '_TravelWith'
+            #check_csv(filename)
+            if not item.get('node') == None and not item.get('node').get('travelWith') == None:
+              records = item.get('node').get('travelWith')
+              if len(records) > 0 and not records[0].get('details') == None:
+
+                details = records[0].get('details')
+                if len(details) > 0:
+
+                  travel_with = ''
+                  for detail in details:
+
+                    id_value = detail.get('reservation').get('key')
+                    if id_value != reservationKey:
+                      travel_with += id_value + ','
+
+                  da_flatten_list_bookings(details, filename, reservationKey, travel_with)
+
             filename = RecordType.RESERVATION.name + '_InvoiceTotals'
             #check_csv(filename)
             if not item.get('node') == None and not item.get('node').get('invoiceTotals') == None:
