@@ -7,7 +7,7 @@ Incoming/
 status/
 *.properties
 key.txt
-*.csv
+*RESERVATION*.csv
 ~*
 *.zip
 *.log
