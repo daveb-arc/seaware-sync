@@ -1,0 +1,183 @@
+query availVoyages {
+    availableVoyages(
+        params: {
+        startDateRange: {
+            from: "2026-01-15",
+            to: "2027-01-31"
+        },
+        availability: ALL
+    }) {
+        voyages {
+            node 
+        }
+        reference
+        pkg {
+            id
+            key
+        }
+        sail {
+            ship {
+                name
+            }
+            from {
+                port {
+                    name
+                }
+                dateTime
+            }
+            to {
+                port {
+                    name
+                }
+                dateTime
+            }
+        }
+        price {
+            total
+        }
+
+            cursor
+        
+        pageInfo {
+          hasPreviousPage
+          hasNextPage
+          startCursor
+          endCursor  
+        }             
+
+    }
+}
+
+query GetDetailsByCode {
+    availableVoyages(
+        params: {
+        reservation: {
+            secondaryAgency: {
+                id: "Agency|5"
+            },
+            currency: {
+                key: "USD"
+            }
+        },
+        codes: "FS-I-260412-007",
+        availability: ALL
+    }) {
+        ...VoyageInfo
+    }
+}
+
+fragment VoyageInfo on AvailableVoyage {
+    pkg {
+        id
+        code
+        name
+        comment
+        description
+        classifications {
+            code
+            dateRange {
+                from
+                to
+            }
+            type
+        }
+        sailDays
+    }
+    sail {
+        from {
+            port {
+                code
+                name
+            }
+            dateTime
+        }
+        to {
+            port {
+                code
+                name
+            }
+        }
+        ship {
+            key
+            name
+            brand
+            decks {
+                key
+                code
+                name
+            }
+        }
+    }
+    availableCategories {
+        cabinCategory {
+            id
+            description
+            comments
+            key
+            decks {
+                key
+                code
+                name
+            }
+        }
+        availability {
+            result
+            shipResult
+            totalCabins
+            availableCabins
+            reserved
+            availableReserved
+            totalAvailableAbsolute
+            totalAvailableWeighted
+            byCapacity {
+                capacity
+                absolute
+            }
+        }
+        price {
+            pricePerGuest {
+                guest {
+                    seqN
+                }
+                total
+                currency {
+                    code
+                }
+                details {
+                    code
+                    amount
+                    discount
+                }
+            }
+            total
+            currency {
+                code
+            }
+            details {
+                code
+                amount
+                discount
+            }
+        }
+    }
+    price {
+        total
+        currency {
+            code
+        }
+    }
+    sailActivities {
+        dateTime
+        mayDisembark
+        mayEmbark
+        type {
+            code
+        }
+        port {
+            code
+            name
+        }
+        description
+        dressCode
+    }
+}
