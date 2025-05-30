@@ -240,7 +240,8 @@ def get_csv_dataframe(full_filename):
   
   if os.path.exists(full_filename) and os.path.getsize(full_filename) > 0:
     try:
-      data_frame = pd.read_csv(full_filename)
+      data_frame = pd.read_csv(full_filename, encoding='utf-8') # or 'ISO-8859-1' if needed
+      data_frame = data_frame.applymap(lambda x: x.decode('utf-8') if isinstance(x, bytes) else x)
 
       # Check if the DataFrame has columns
       if not data_frame.empty:
@@ -347,8 +348,6 @@ def process_salesforce_clients(record_type, record_mode):
 
   for index, row in data_frame.iterrows():
 
-      row = row.apply(lambda x: x.strip("b'") if isinstance(x, str) else x)
-
       if row['Contact_Type__c'] != 'Guest':
          continue
 
@@ -417,8 +416,6 @@ def process_bookings_salesforce(full_filename, record_type, record_mode):
   queries_remaining = 500
   for index, row in data_frame.iterrows():
 
-    row = row.apply(lambda x: x.strip("b'") if isinstance(x, str) else x)
-
     booking_number_seaware = row['Booking_Number_Seaware__c']
     if booking_number_seaware == '' or (not isinstance(booking_number_seaware, str) and math.isnan(booking_number_seaware)):
 
@@ -450,8 +447,6 @@ def process_bookings_other(full_filename, record_type, record_mode):
 
   queries_remaining = 500
   for index, row in data_frame.iterrows():
-
-    row = row.apply(lambda x: x.strip("b'") if isinstance(x, str) else x)
 
     booking_number_seaware = ''
     if 'Salesforce' in full_filename:
@@ -496,8 +491,6 @@ def process_salesforce_agents(record_type, record_mode):
         processed_ids = file.read()
 
   for index, row in data_frame.iterrows():
-
-      row = row.apply(lambda x: x.strip("b'") if isinstance(x, str) else x)
 
       if row['Contact_Type__c'] != 'Representative':
          continue
@@ -569,8 +562,6 @@ def process_salesforce_agencies(record_type, record_mode):
         processed_ids = file.read()
 
   for index, row in data_frame.iterrows():
-
-      row = row.apply(lambda x: x.strip("b'") if isinstance(x, str) else x)
 
       if row['Contact_Type__c'] != 'Representative':
          continue
