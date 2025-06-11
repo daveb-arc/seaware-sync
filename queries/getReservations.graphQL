@@ -343,27 +343,6 @@ fragment ReservationFragment on Reservation {
                 key
             }
 
-            cabinChain {
-              cabin {
-                name
-                key
-                number
-                category {
-                  key
-                }
-                attributes {
-                    attribute {
-                        key
-                        id
-                        name
-                        type {
-                            key
-                            id
-                        }
-                    }
-                }
-              }
-            }
             sail {
                 from {
                     dateTime
@@ -380,6 +359,18 @@ fragment ReservationFragment on Reservation {
                     }
                 }
             }
+
+            cabinChain {
+              cabin {
+                name
+                key
+                number
+                category {
+                  key
+                }
+              }
+            }
+
             cabinAttributes {
                 attribute {
                     key

@@ -233,6 +233,8 @@ def get_graphql_url():
 #####################################################
 def get_csv_dataframe(full_filename):
 
+  import warnings
+
   fileCheckPath = Path(full_filename)
   fileCheckExists = fileCheckPath.is_file()
   if not fileCheckExists:
@@ -241,7 +243,10 @@ def get_csv_dataframe(full_filename):
   if os.path.exists(full_filename) and os.path.getsize(full_filename) > 0:
     try:
       data_frame = pd.read_csv(full_filename, encoding='utf-8') # or 'ISO-8859-1' if needed
-      data_frame = data_frame.applymap(lambda x: x.decode('utf-8') if isinstance(x, bytes) else x)
+
+      with warnings.catch_warnings():
+        warnings.simplefilter(action='ignore', category=FutureWarning)
+        data_frame = data_frame.applymap(lambda x: x.decode('utf-8') if isinstance(x, bytes) else x)
 
       # Check if the DataFrame has columns
       if not data_frame.empty:
@@ -1818,9 +1823,14 @@ def da_flatten_list_bookings(json_list, key, reservationKey, guestKey):
                   da_flatten_list_bookings(guest['voyages'][0]['pkg'], filename, reservationKey, guestKey)
 
                 filename = RecordType.RESERVATION.name + '_CabinAttributes'
-                if len(guest['voyages']) > 0 and not guest['voyages'][0]['cabinAttributes'] == None:
-                  if len(guest['voyages'][0]['cabinAttributes']) > 0:
-                    da_flatten_list_bookings(guest['voyages'][0]['cabinAttributes'], filename, reservationKey, guestKey)
+                if len(guest['voyages']) > 0 and not guest['voyages'][0]['cabinAttributes'] == None and not guest['voyages'][0]['cabinChain'] == None:
+                  if len(guest['voyages'][0]['cabinAttributes']) > 0 and len(guest['voyages'][0]['cabinChain']) > 0:
+
+                    cabinAttributes = guest['voyages'][0]['cabinAttributes']
+                    cabinChain = guest['voyages'][0]['cabinChain']
+                    cabinCombined = {"cabin": cabinAttributes + cabinChain}
+
+                    da_flatten_list_bookings(cabinCombined, filename, reservationKey, guestKey)
 
                 filename = RecordType.RESERVATION.name + '_BorderForms'
                 if not guest['client'] == None and not guest['client']['borderForms'] == None:
