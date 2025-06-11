@@ -1828,7 +1828,7 @@ def da_flatten_list_bookings(json_list, key, reservationKey, guestKey):
 
                     cabinAttributes = guest['voyages'][0]['cabinAttributes']
                     cabinChain = guest['voyages'][0]['cabinChain']
-                    cabinCombined = {"cabin": cabinAttributes + cabinChain}
+                    cabinCombined = {"cabin": cabinChain + cabinAttributes}
 
                     da_flatten_list_bookings(cabinCombined, filename, reservationKey, guestKey)
 
