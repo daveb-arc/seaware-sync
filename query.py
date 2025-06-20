@@ -134,6 +134,7 @@ def main():
 
       # Process Salesforce Flagged Reservations
       full_filename = 'C:/repo/Salesforce-Exporter-Private/Clients/SEAWARE-BOOKINGS/Salesforce-Exporter/Clients/SEAWARE-BOOKINGS/Export/Booking-Prod.csv'
+     # process_seaware(record_type, record_mode, id_value = 'Reservation|' + "11978")
       process_bookings_salesforce(full_filename, record_type, record_mode)
       process_bookings_other(full_filename, record_type, record_mode)
 

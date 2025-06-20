@@ -247,11 +247,11 @@ fragment ReservationFragment on Reservation {
         }
         addons {
             addon {
+                name
                 type {
                     key
                 }
                 comments
-                name
                 category {
                     id
                     key
