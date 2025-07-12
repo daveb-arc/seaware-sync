@@ -1,0 +1,15 @@
+# .devcontainer-windows/docker-compose.yml
+version: '3.8'
+
+services:
+  uncruise-dev:
+    image: uncruise-dev-win
+    build:
+      context: ..
+      dockerfile: .devcontainer-windows/Dockerfile
+    volumes:
+      - ../repo:C:/repo
+    tty: true
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
