@@ -1,0 +1,12 @@
+services:
+  uncruise-dev:
+    image: uncruise-dev-win
+    build:
+      context: ..
+      dockerfile: seaware-sync/Dockerfile
+    tty: true
+    stdin_open: true
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    command: ["C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"]
