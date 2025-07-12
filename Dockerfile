@@ -18,6 +18,14 @@ COPY seaware-sync/dependencies/python-3.12.0-amd64.exe python-installer.exe
 RUN Start-Process .\python-installer.exe -ArgumentList '/quiet InstallAllUsers=1 PrependPath=1' -Wait ; \
     Remove-Item python-installer.exe
 
+RUN Invoke-WebRequest \
+    -Uri "https://www.python.org/ftp/python/2.7.18/python-2.7.18.amd64.msi" \
+    -OutFile python27.msi; \
+    Start-Process msiexec.exe \
+    -ArgumentList '/i','python27.msi','ALLUSERS=1','ADDLOCAL=ALL','/qn' \
+    -Wait; \
+    Remove-Item python27.msi
+  
 # Copy cloned repositories
 COPY Salesforce-Importer C:/repo/Salesforce-Importer
 COPY Salesforce-Exporter C:/repo/Salesforce-Exporter
