@@ -4,10 +4,10 @@ FROM mcr.microsoft.com/windows/servercore:20H2
 SHELL ["powershell", "-Command"]
 
 # Download & install Liberica JRE 17 (~43 MB)
-RUN Invoke-WebRequest `
-    -Uri "https://download.bell-sw.com/java/17.0.12+10/bellsoft-jre17.0.12+10-windows-amd64.zip" `
-    -OutFile jre.zip ; `
-  Expand-Archive jre.zip -DestinationPath C:\Java\jre ; `
+RUN Invoke-WebRequest \
+    -Uri "https://download.bell-sw.com/java/17.0.12+10/bellsoft-jre17.0.12+10-windows-amd64.zip" \
+    -OutFile jre.zip ; \
+  Expand-Archive jre.zip -DestinationPath C:\Java\jre ; \
   Remove-Item jre.zip
 
 ENV JAVA_HOME="C:\\Java\\jre"
