@@ -100,7 +100,7 @@ C:\repo\
 ### 2. Build the Docker image (from repo root)
 
 ```powershell
-docker build -t uncruise-dev-win -f seaware-sync\Dockerfile .
+docker build --network="Default Switch" -t uncruise-dev-win -f seaware-sync\Dockerfile .
 ```
 
 ---
@@ -183,6 +183,86 @@ docker system prune -a
 - This setup is for **Windows containers** (not Linux containers).
 - `docker-compose.yml` stays versioned under `seaware-sync`.
 - All build/run commands should be run from `C:\repo`.
+
+---
+
+Sure! Here's the **"Run Sync Process"** section in Markdown format, ready for you to copy and paste into your GitHub README:
+
+---
+
+## 🚀 Run Sync Process
+
+### ✅ 1. Pull latest changes from all 5 repos
+
+```powershell
+cd C:\repo
+git -C Salesforce-Importer pull
+git -C Salesforce-Exporter pull
+git -C Salesforce-Importer-Private pull
+git -C Salesforce-Exporter-Private pull
+git -C seaware-sync pull
+```
+
+---
+
+### ✅ 2. Launch the container in VS Code
+
+Attach to the dev container following the instructions in this README.
+
+---
+
+### ✅ 3. Initialize the Seaware import
+
+In VS Code’s integrated PowerShell terminal:
+
+```powershell
+& "C:\repo\Salesforce-Importer-Private\Clients\SEAWARE-BOOKINGS\importer-docker.bat" Bookings Prod -interactivemode
+```
+
+---
+
+### ✅ 4. Run production sync scripts
+
+From the `docker` folder:
+
+```powershell
+& "C:\repo\Salesforce-Importer-Private\Execute\SEAWARE\docker\salesforce-import-bookings.bat"
+```
+
+This ensures the production sync logic is preserved and not altered.
+
+---
+
+### ✅ 5. What gets done
+
+* **Exports from Salesforce →**
+  `C:\repo\Salesforce-Exporter-Private\Clients\SEAWARE-BOOKINGS\…\Export`
+* **Exports from Seaware →**
+  `C:\repo\seaware-sync\output_csv`
+
+---
+
+### ✅ 6. Copy results from container to host
+
+1. Find the running container name:
+
+   ```powershell
+   docker ps
+   ```
+
+2. Copy files to Windows host:
+
+   ```powershell
+   $cid = "seaware-sync-uncruise-dev-1"
+
+   docker cp "$cid:`"C:\repo\Salesforce-Exporter-Private\Clients\SEAWARE-BOOKINGS\Salesforce-Exporter\Clients\SEAWARE-BOOKINGS\Export`" \
+       "C:\repo\Salesforce-Exporter-Private\Clients\SEAWARE-BOOKINGS\Salesforce-Exporter\Clients\SEAWARE-BOOKINGS\Export"
+
+   docker cp "$cid:`"C:\repo\seaware-sync\output_csv`" \
+       "C:\repo\seaware-sync\output_csv"
+   ```
+
+These commands overwrite any existing files on the host with the latest exports from the container.
 
 ---
 
