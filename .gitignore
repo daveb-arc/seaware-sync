@@ -8,6 +8,5 @@ status/
 *.properties
 key.txt
 ~*
-*.zip
 *.log
 output_csv
