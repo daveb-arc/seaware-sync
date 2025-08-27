@@ -1,0 +1,20 @@
+# Ignore everything by default
+**
+
+# Include required folders and files
+!Salesforce-Importer/**
+!Salesforce-Exporter/**
+!Salesforce-Importer-Private/**
+!Salesforce-Exporter-Private/**
+!seaware-sync/**
+!seaware-sync/Dockerfile
+!seaware-sync/docker-compose.yml
+!seaware-sync/dependencies/jre-17.0.15/**
+!seaware-sync/dependencies/python-3.12.0-amd64.exe
+!seaware-sync/dependencies/python-2.7.18.amd64.msi
+!seaware-sync/dependencies/dataloader_v64.0.2/**
+
+# Exclude hidden metadata, git history, node_modules, etc.
+.git
+.gitignore
+*.logc

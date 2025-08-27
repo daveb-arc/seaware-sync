@@ -100,7 +100,8 @@ C:\repo\
 ### 2. Build the Docker image (from repo root)
 
 ```powershell
-docker build --network="Default Switch" -t uncruise-dev-win -f seaware-sync\Dockerfile .
+$Env:DOCKER_BUILDKIT = 1
+docker build --network="Default Switch" --no-cache -t uncruise-dev-win -f seaware-sync\Dockerfile seaware-sync
 ```
 
 ---
