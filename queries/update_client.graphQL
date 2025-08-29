@@ -14,6 +14,22 @@ mutation updateRecord {
         guestType: {
           key: "REGULAR"
         }
+        household: {
+          data: {
+            addresses: [
+              {
+                type:    { id: "AddressType|PRIMARY" }
+                mailing: true
+                shipping: false
+                line1: "MAILING_STREET"
+                city: "MAILING_CITY"
+                country: { key: ["MAILING_COUNTRY"] }
+                state:   { key: ["MAILING_COUNTRY","MAILING_STATE"] }
+                zip: "MAILING_POSTALCODE"
+              }
+            ]
+          }
+        }
       }
     }) {
     
