@@ -1818,6 +1818,7 @@ def da_flatten_list_bookings(json_list, key, reservationKey, guestKey):
                 da_flatten_list_bookings(guest['voyages'], RecordType.RESERVATION.name + '_Voyages', reservationKey, guestKey)
                 da_flatten_list_bookings(guest['transfer'], RecordType.RESERVATION.name + '_Transfers', reservationKey, guestKey)
                 da_flatten_list_bookings(guest['addons'], RecordType.RESERVATION.name + '_AddOns', reservationKey, guestKey)
+                da_flatten_list_bookings(guest['land'], RecordType.RESERVATION.name + '_Packages', reservationKey, guestKey)
 
                 filename = RecordType.RESERVATION.name + '_VoyagePackages'
                 if len(guest['voyages']) > 0 and not guest['voyages'][0]['pkg'] == None:
