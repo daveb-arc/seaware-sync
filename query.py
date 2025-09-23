@@ -100,8 +100,8 @@ def main():
       # Get the current time
       now = datetime.now()
 
-      # Transfer and Flight linking happens in 2 different change events which is currently driven by SyncDate__c on Item which takes a day change to be updated the 2nd time
-      number_days = 0.2
+      # 0.05 means 1.2 hours of history (sync runs every 30 minutes)
+      number_days = 0.05
 
       delta_days_ago = now - timedelta(days=number_days)
 
