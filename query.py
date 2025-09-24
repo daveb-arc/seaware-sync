@@ -738,6 +738,28 @@ def process_seaware_bylookup(record_type, record_mode, row = None):
 
   return json_res
 
+
+#####################################################
+#
+# get_postalcode
+#
+#####################################################
+import re
+
+def get_postalcode(v):
+    
+    s = str(v).strip()
+
+    # if it's digits followed by .0 or .00... keep only the digits
+    m = re.fullmatch(r'(\d+)\.0+', s)
+
+    postal_code = m.group(1) if m else s
+
+    if (len(postal_code) == 4):
+      postal_code = '0' + postal_code
+
+    return postal_code
+
 #####################################################
 #
 # get_safe_string - 
@@ -746,6 +768,8 @@ def process_seaware_bylookup(record_type, record_mode, row = None):
 def get_safe_string(string_value):
 
   string_value = string_value.replace(' ', '')
+  string_value = string_value.replace('none', '')
+
   return string_value
 
 #####################################################
@@ -837,6 +861,36 @@ def insert_row_client(record_type, record_mode, row):
   query = query.replace('EMAIL_VALUE', safeValue)
 
   safeValue = ''
+  if not pd.isna(row['MailingStreet']) and not str(row['MailingStreet']).strip() == '':
+    safeValue = row['MailingStreet']
+
+  query = query.replace('MAILING_STREET', safeValue)
+
+  safeValue = ''
+  if not pd.isna(row['MailingCity']) and not str(row['MailingCity']).strip() == '':
+    safeValue = row['MailingCity']
+
+  query = query.replace('MAILING_CITY', safeValue)
+
+  safeValue = ''
+  if not pd.isna(row['MailingStateCode']) and not str(row['MailingStateCode']).strip() == '':
+    safeValue = row['MailingStateCode']
+
+  query = query.replace('MAILING_STATE', safeValue)
+
+  safeValue = ''
+  if not pd.isna(row['MailingCountryCode']) and not str(row['MailingCountryCode']).strip() == '':
+    safeValue = row['MailingCountryCode']
+
+  query = query.replace('MAILING_COUNTRY', safeValue)
+
+  safeValue = ''
+  if not pd.isna(row['MailingPostalCode']) and not str(row['MailingPostalCode']).strip() == '':
+    safeValue = get_postalcode(str(row['MailingPostalCode']))
+
+  query = query.replace('MAILING_POSTALCODE', safeValue)
+
+  safeValue = ''
   if not pd.isna(row['Phone']) and not get_safe_phone(str(row['Phone'])) == '':
     safeValue = get_safe_phone(str(row['Phone']))
     primary_phonenumber_json = '{type:{key:"PRIMARY"} intlCode:1 number:"PRIMARY_PHONENUMBER"}'
@@ -914,6 +968,36 @@ def update_row_client(record_type, record_mode, row, id_value):
     safeValue = row['Email']
 
   query = query.replace('EMAIL_VALUE', safeValue)
+
+  safeValue = ''
+  if not pd.isna(row['MailingStreet']) and not str(row['MailingStreet']).strip() == '':
+    safeValue = row['MailingStreet']
+
+  query = query.replace('MAILING_STREET', safeValue)
+
+  safeValue = ''
+  if not pd.isna(row['MailingCity']) and not str(row['MailingCity']).strip() == '':
+    safeValue = row['MailingCity']
+
+  query = query.replace('MAILING_CITY', safeValue)
+
+  safeValue = ''
+  if not pd.isna(row['MailingStateCode']) and not str(row['MailingStateCode']).strip() == '':
+    safeValue = row['MailingStateCode']
+
+  query = query.replace('MAILING_STATE', safeValue)
+
+  safeValue = ''
+  if not pd.isna(row['MailingCountryCode']) and not str(row['MailingCountryCode']).strip() == '':
+    safeValue = row['MailingCountryCode']
+
+  query = query.replace('MAILING_COUNTRY', safeValue)
+
+  safeValue = ''
+  if not pd.isna(row['MailingPostalCode']) and not str(row['MailingPostalCode']).strip() == '':
+    safeValue = get_postalcode(str(row['MailingPostalCode']))
+
+  query = query.replace('MAILING_POSTALCODE', safeValue)
 
   safeValue = ''
   if not pd.isna(row['Phone']) and not get_safe_string(str(row['Phone'])) == '':
