@@ -12,10 +12,10 @@
             "console": "integratedTerminal",
             "args": [
  //               "CRUISE"
-                "RESERVATION"
-                ,"QUERY"
- //               "CLIENT"
- //               ,"SFPUSH"
+ //               "RESERVATION"
+ //               ,"QUERY"
+                "CLIENT"
+                ,"SFPUSH"
 //                "AGENT"
 //                "AGENCY"
 //                ,"QUERY"
