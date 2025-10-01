@@ -6,6 +6,7 @@ import pandas as pd
 import os
 from enum import Enum
 from datetime import date
+import re
 
 #GRAPHQL_URL = 'https://testreservations.uncruise.com:3000/graphql'
 GRAPHQL_URL = 'https://reservations.uncruise.com:3000/graphql'
@@ -744,8 +745,6 @@ def process_seaware_bylookup(record_type, record_mode, row = None):
 # get_postalcode
 #
 #####################################################
-import re
-
 def get_postalcode(v):
     
     s = str(v).strip()
@@ -862,7 +861,7 @@ def insert_row_client(record_type, record_mode, row):
    
   safeValue = ''
   if not pd.isna(row['MailingStreet']) and not str(row['MailingStreet']).strip() == '':
-    safeValue = row['MailingStreet']
+    safeValue = clean_street_address(row['MailingStreet'])
 
   query = query.replace('MAILING_STREET', safeValue)
 
@@ -971,7 +970,7 @@ def update_row_client(record_type, record_mode, row, id_value):
 
   safeValue = ''
   if not pd.isna(row['MailingStreet']) and not str(row['MailingStreet']).strip() == '':
-    safeValue = row['MailingStreet']
+    safeValue = clean_street_address(row['MailingStreet'])
 
   query = query.replace('MAILING_STREET', safeValue)
 
@@ -2068,6 +2067,13 @@ def flatten_json_results(y):
 
     flatten(y)
     return out
+
+def clean_street_address(s: str) -> str:
+    # Allow letters, digits, spaces, commas, periods, hyphens, slashes, and #
+    cleaned = re.sub(r'[^A-Za-z0-9\s,.\-/#]', '', s)
+    # Collapse multiple spaces
+    cleaned = re.sub(r'\s+', ' ', cleaned)
+    return cleaned.strip()
 
 def clean_value(value):
 
