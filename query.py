@@ -873,7 +873,7 @@ def insert_row_client(record_type, record_mode, row):
 
   safeValue = ''
   if not pd.isna(row['MailingStateCode']) and not str(row['MailingStateCode']).strip() == '':
-    safeValue = row['MailingStateCode'][:2]
+    safeValue = row['MailingStateCode']
 
   query = query.replace('MAILING_STATE', safeValue)
 
@@ -982,7 +982,7 @@ def update_row_client(record_type, record_mode, row, id_value):
 
   safeValue = ''
   if not pd.isna(row['MailingStateCode']) and not str(row['MailingStateCode']).strip() == '':
-    safeValue = row['MailingStateCode'][:2]
+    safeValue = row['MailingStateCode']
 
   query = query.replace('MAILING_STATE', safeValue)
 
