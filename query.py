@@ -101,8 +101,8 @@ def main():
       # Get the current time
       now = datetime.now()
 
-      # 0.05 means 1.2 hours of history (sync runs every 30 minutes)
-      number_days = 0.05
+      # 0.1 is 2.5 hours of history (sync runs every 30 minutes)
+      number_days = 0.1
 
       delta_days_ago = now - timedelta(days=number_days)
 
