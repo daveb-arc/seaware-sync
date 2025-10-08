@@ -5,7 +5,7 @@ from pathlib import Path
 import pandas as pd
 import os
 from enum import Enum
-from datetime import date
+from datetime import date, datetime
 import re
 
 #GRAPHQL_URL = 'https://testreservations.uncruise.com:3000/graphql'
@@ -101,8 +101,12 @@ def main():
       # Get the current time
       now = datetime.now()
 
-      # 0.1 is 2.5 hours of history (sync runs every 30 minutes)
-      number_days = 0.1
+      # Query 2 hours of history duing day and 1 day history at night (sync runs every 30 minutes)
+      number_days = 2 / 24
+      now = datetime.now()
+      hour = now.hour
+      if hour >= 22 or hour <=2:
+        number_days = 1
 
       delta_days_ago = now - timedelta(days=number_days)
 
