@@ -1780,6 +1780,7 @@ def da_flatten_list(record_type, record_mode, json_list, access_token, row = Non
       else:
           print_log(f"Skipping non-dict item in list '{record_type.name}': {item}")
 
+
   # Write to CSV file named after the key
   write_to_csv(csv_data, f"{record_type.name}.csv")
 
@@ -2107,54 +2108,89 @@ def clean_row_values(dictionary_data):
   
   return normalized_list
 
+import csv
+import os
+from pathlib import Path
+
 def write_to_csv(data, filename):
-    
-    if not bool(data):
+    """
+    Writes a list of dict rows to CSV:
+    - Ensures 'index' is the first column.
+    - Adds any new columns to the header and realigns existing file rows.
+    - Writes each row's values in the same column order as the header.
+    """
+    if not data:
         return
-    
-    full_filename = os.path.join("C:/repo/seaware-sync/output_csv", filename)
 
-    fileCheckPath = Path(full_filename)
-    fileCheckExists = fileCheckPath.is_file()
+    # 1) Build fieldnames with 'index' first
+    cols = set()
+    for d in data:
+        cols.update(d.keys())
+    cols.discard('index')
+    fieldnames = ['index'] + sorted(cols)  # keep deterministic order after 'index'
 
-    # Check to update header
-    if fileCheckExists:
+    out_dir = "C:/repo/seaware-sync/output_csv"
+    os.makedirs(out_dir, exist_ok=True)
+    full_filename = os.path.join(out_dir, filename)
 
-      with open(full_filename, mode='r', newline='') as infile:
-          reader = csv.reader(infile)
-          rows = list(reader)
+    file_path = Path(full_filename)
+    exists = file_path.is_file()
 
-      for data_row in data:
+    # Helper to coerce a dict row into list values following fieldnames
+    def row_to_list(d):
+        # ensure missing keys become empty and clean/format as needed
+        return [clean_cell(d.get(k)) for k in fieldnames]
 
-        if len(rows[0]) < len(data_row):
+    # Minimal cleaner (keeps your hook)
+    def clean_cell(v):
+        # reuse your clean_row_values() if you like, here it’s per-cell:
+        if v is None:
+            return ""
+        return str(v)
 
-          rows[0] = data_row.keys()
+    # 2) If file exists, ensure header includes all current fieldnames (and reorder if needed)
+    if exists:
+        with open(full_filename, 'r', newline='', encoding='utf-8') as f:
+            reader = csv.reader(f)
+            rows = list(reader)
 
-          with open(full_filename, mode='w', newline='') as outfile:
-              writer = csv.writer(outfile)
-              writer.writerows(rows)
+        if rows:
+            old_header = rows[0]
+        else:
+            old_header = []
 
-    """Write flattened data to a CSV file."""
-    with open(full_filename, 'a+', newline='') as csvfile:
-        
-        writer = csv.writer(csvfile)
+        # If header differs (new cols or different order), rewrite entire file with new header
+        if old_header != fieldnames:
+            # Map old header indices
+            old_idx = {name: i for i, name in enumerate(old_header)}
+            # Rebuild all existing data rows to match new header order/length
+            rebuilt = [fieldnames]
+            for r in rows[1:]:
+                new_r = []
+                for col in fieldnames:
+                    if col in old_idx and old_idx[col] < len(r):
+                        new_r.append(r[old_idx[col]])
+                    else:
+                        new_r.append("")  # new column => blank for historical rows
+                rebuilt.append(new_r)
 
-        if not fileCheckExists:
+            with open(full_filename, 'w', newline='', encoding='utf-8') as f:
+                writer = csv.writer(f)
+                writer.writerows(rebuilt)
 
-          # Write header
-          row_headers = data[0].keys()
-          for data_row in data:
+            exists = True  # file now rewritten with correct header/order
 
-            if len(row_headers) < len(data_row):
+    # 3) If file didn’t exist (or was empty), write header first
+    if not exists or os.path.getsize(full_filename) == 0:
+        with open(full_filename, 'w', newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            writer.writerow(fieldnames)
 
-              row_headers = data_row.keys()
-
-          writer.writerow(row_headers)
-
-        # Write rows
-        for row in data:
-            cleaned_values = clean_row_values(row.values())
-            writer.writerow(cleaned_values)
+    # 4) Append new rows in the exact fieldnames order
+    with open(full_filename, 'a', newline='', encoding='utf-8') as f:
+        writer = csv.writer(f)
+        for d in data:
+            writer.writerow(row_to_list(d))
 
 #    print_log(f"Written {full_filename}")
 
