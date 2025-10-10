@@ -1,6 +1,7 @@
 query getAvailableVoyages {
   availableVoyages(params: {
     
+    availability: ALL
     startDateRange: {
       from: "FROMDATETIME_VALUE"
       to: "TODATETIME_VALUE"
@@ -13,6 +14,7 @@ query getAvailableVoyages {
         name
       }
     }
+
  		sail {
       
       from {
@@ -26,6 +28,10 @@ query getAvailableVoyages {
         id
         key
       }
+    }
+
+    availableCategories {    
+      availabilityResult
     }
   }
 }

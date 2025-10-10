@@ -11,8 +11,8 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "args": [
- //               "CRUISE"
-                "RESERVATION"
+                "CRUISE"
+ //               "RESERVATION"
                 ,"QUERY"
  //               "CLIENT"
  //               ,"SFPUSH"

@@ -1,7 +1,8 @@
 
   query getAvailableCabins {
-  availableCabins(params: {
+   availableCabins(params: {
     
+    returnAllocated: true
     sailRange: {
     
       from: {dateTime:  "SHIP_FROMDATETIME_VALUE"}

@@ -541,8 +541,10 @@ def process_inventory_cruise(record_type):
   voyages = json_res.get('data').get('availableVoyages')
   for voyage in voyages:
 
-    # Get Available Cabins
+    # Get Voyage Details
     json_res = process_seaware(RecordType.CABIN, RecordMode.QUERY, '', '', voyage)
+
+    # Get Available Cabins
 #    cabins = json_res.get('data').get('availableCabins')
 
 def process_inventory_shipcabin(record_type):
@@ -1520,6 +1522,10 @@ def fetch_items(record_type, record_mode, fromDateTime, toDateTime, headers, row
       number_days = 365 * 3
       #number_days = 3
       end_range = today + timedelta(days=number_days)
+
+      # Debugging - specific range
+#      today = datetime.today() + timedelta(days=595)
+#      end_range = today + timedelta(days=5)
 
       formatted_todate = end_range.strftime("%Y-%m-%d")
       query = query.replace('TODATETIME_VALUE', formatted_todate)
