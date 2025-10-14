@@ -118,11 +118,38 @@ def main():
         # Iterate from now to delta days ago, in 1-hour steps
         query_time = now
         while query_time > delta_days_ago:
+            
             end_time = query_time.strftime("%Y-%m-%dT%H:%M:00")
             query_time -= timedelta(hours=1)
             start_time = query_time.strftime("%Y-%m-%dT%H:%M:00")
 
-            process_seaware(record_type, record_mode, start_time, end_time)
+            process_results_by_hour = process_seaware(record_type, record_mode, start_time, end_time)
+
+            # Timeout then switch to by minute
+            if process_results_by_hour is None:
+               
+               query_time_retry_hours = query_time
+               query_time += timedelta(hours=1)
+               while query_time > query_time_retry_hours:
+                  
+                  end_time = query_time.strftime("%Y-%m-%dT%H:%M:00")
+                  query_time -= timedelta(minutes=1)
+                  start_time = query_time.strftime("%Y-%m-%dT%H:%M:00")
+
+                  process_results_by_minute = process_seaware(record_type, record_mode, start_time, end_time)
+
+                  # Timeout then switch to by second
+                  if process_results_by_minute is None:
+                    
+                    query_time_retry_minutes = query_time
+                    query_time += timedelta(minutes=1)
+                    while query_time > query_time_retry_minutes:
+                        
+                        end_time = query_time.strftime("%Y-%m-%dT%H:%M:%S")
+                        query_time -= timedelta(seconds=1)
+                        start_time = query_time.strftime("%Y-%m-%dT%H:%M:%S")
+
+                        process_seaware(record_type, record_mode, start_time, end_time)
 
       else:
 
@@ -631,8 +658,12 @@ def process_seaware(record_type, record_mode, fromDateTime = None, toDateTime = 
   # Initial request - no cursor
   json_res = fetch_items(record_type, record_mode, fromDateTime, toDateTime, headers, row, id_value=id_value)
 
+  def fmt_dt(dt):
+    return dt.isoformat() if dt is not None and hasattr(dt, "isoformat") else str(dt)
+
   if json_res is None or (isinstance(json_res, dict) and json_res.get("errors")):
-    print_log(f"Initial Query (id_value={id_value!r}) - error processing: {json_res!r}")
+    print_log(f"Initial Query (id_value={id_value!r}) - error processing: {json_res!r} | fromDateTime={fmt_dt(fromDateTime)} | toDateTime={fmt_dt(toDateTime)}")
+    logout_graphql(headers)
     return json_res
   
   incoming_items = len(json_res.get('data').get(record_type_value))
@@ -640,9 +671,13 @@ def process_seaware(record_type, record_mode, fromDateTime = None, toDateTime = 
   if record_type != RecordType.CRUISE and record_type != RecordType.CABIN and record_type != RecordType.SHIP and record_type != RecordType.RESERVATION_OTHER:
     incoming_items = len(json_res.get('data').get(record_type_value).get('edges'))
   
-  print_log("Initial Query - incoming_items: " + str(incoming_items))     
+  if incoming_items > 0:
+    print_log(f"Change Query Results - incoming_items: {incoming_items!r} | fromDateTime={fmt_dt(fromDateTime)} | toDateTime={fmt_dt(toDateTime)}")
+
   if incoming_items >= 500:   
     print_log("CAUTION: Initial Query is 500 which is the MAX result set even with paging, reduce query logic.  incoming_items: " + str(incoming_items)) 
+    logout_graphql(headers)
+    return None
 
   if incoming_items > 0:
     if record_type != RecordType.CRUISE and record_type != RecordType.CABIN and record_type != RecordType.SHIP and record_type != RecordType.RESERVATION_OTHER:
@@ -660,6 +695,7 @@ def process_seaware(record_type, record_mode, fromDateTime = None, toDateTime = 
 
   else:
     print_log("unknown response type")
+    logout_graphql(headers)
     return json_res
 
   # Check for next page - max query is total of 500 regardless of the paging request size
@@ -722,6 +758,7 @@ def process_seaware_bylookup(record_type, record_mode, row = None):
 
   else:
     print_log("unknown response type")
+    logout_graphql(headers)
     return json_res
 
   # Check for next page - max query is total of 500 regardless of the paging request size
@@ -1559,7 +1596,7 @@ def fetch_items(record_type, record_mode, fromDateTime, toDateTime, headers, row
     query = query.replace('$sailEnd: Date', '')
     query = query.replace('fromDateTimeRange: { from: $sailStart, to: $sailEnd }', '')
 
-  timeout_value = 120
+  timeout_value = 60
   response = ''
   try:
 
@@ -1745,7 +1782,21 @@ def da_flatten_list(record_type, record_mode, json_list, access_token, row = Non
 
           elif record_type == RecordType.RESERVATION:
              
-             should_process_record = True
+            should_process_record = True
+
+            sail_date = ''
+            try:
+              sail_date = item['node']['guests'][0]['voyages'][0]['sail']['from']['dateTime']
+            except (KeyError, IndexError, TypeError):
+                continue  # anything missing -> skip
+
+            if not sail_date or str(sail_date).strip() == '':
+                continue
+
+            from datetime import datetime
+            dt_sail = datetime.strptime(sail_date, "%Y-%m-%dT%H:%M:%S")
+            if dt_sail < datetime.now():
+              continue
 
           if (should_process_record):
 
@@ -1919,6 +1970,10 @@ def da_flatten_list_bookings(json_list, key, reservationKey, guestKey):
             if 'node_key' in flattened_items:
               reservationKey = flattened_items['node_key']
 
+            # Make sure reservation queued
+            if reservationKey == '' or not reservation_key_in_file(reservationKey):
+                continue
+            
             client_ids = get_values_by_key_substring(flattened_items, "client_id")
             if len(client_ids) > 0:
               guestKey = client_ids[len(client_ids) - 1]
@@ -2056,6 +2111,15 @@ def da_flatten_list_bookings(json_list, key, reservationKey, guestKey):
 
   # Write to CSV file named after the key
   write_to_csv(csv_data, f"{key}.csv")
+
+def reservation_key_in_file(reservation_key: str) -> bool:
+    
+    CSV_PATH = r"C:/repo/seaware-sync/output_csv/RESERVATION.csv"
+    p = Path(CSV_PATH)
+    if not p.exists():
+        return False
+    text = p.read_text(encoding="utf-8", errors="ignore")
+    return reservation_key in text
 
 def flatten_json_lists(y):
     
