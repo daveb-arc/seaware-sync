@@ -108,6 +108,8 @@ def main():
       if hour >= 22 or hour <=2:
         number_days = 1
 
+      #number_days = 5
+
       delta_days_ago = now - timedelta(days=number_days)
 
       # Query by hour because as of 1/17/25 the day query is taking too long, investigating but until then do hour query
@@ -628,7 +630,9 @@ def process_seaware(record_type, record_mode, fromDateTime = None, toDateTime = 
 
   # Initial request - no cursor
   json_res = fetch_items(record_type, record_mode, fromDateTime, toDateTime, headers, row, id_value=id_value)
-  if "errors" in json_res:
+
+  if json_res is None or (isinstance(json_res, dict) and json_res.get("errors")):
+    print_log(f"Initial Query (id_value={id_value!r}) - error processing: {json_res!r}")
     return json_res
   
   incoming_items = len(json_res.get('data').get(record_type_value))
@@ -1567,9 +1571,17 @@ def fetch_items(record_type, record_mode, fromDateTime, toDateTime, headers, row
   except requests.exceptions.RequestException as e:
       print(f"An error occurred: {e}")  
 
+  # Guard: response must be a requests.Response (don't use `if not response`!)
+  if response is None or not isinstance(response, requests.Response):
+      # Log what we actually got
+      print(f"Request failed: expected requests.Response, got {type(response).__name__}: {repr(response)[:200]}")
+      return None  # or raise, or handle retry
+
   if response.status_code != 200:
-    print_log(f"fetch_items: {response.status_code} {response.text}")
-    #raise Exception(f"response failed: {response.status_code} {response.text}")
+    body_preview = (response.text or "")[:500]
+    print_log(f"fetch_items: {response.status_code} {body_preview}")
+    #raise Exception(f"response failed: {response.status_code} {body_preview}")
+    return None  # or raise, or handle retry
 
   json_data = response.json()
   if record_type == RecordType.RESERVATION:
@@ -1704,6 +1716,12 @@ def da_flatten_list(record_type, record_mode, json_list, access_token, row = Non
 
   # Create a list of dictionaries for CSV writing
   csv_data = []
+
+  # figure out the output file and how many rows it already has
+  out_dir = "C:/repo/seaware-sync/output_csv"
+  out_path = os.path.join(out_dir, f"{record_type.name}.csv")
+  start_index = _existing_rows_without_header(out_path)
+    
   for index, item in enumerate(json_list):
       
       if isinstance(item, dict):
@@ -1762,7 +1780,7 @@ def da_flatten_list(record_type, record_mode, json_list, access_token, row = Non
               continue
           
           # Add an identifier for each item in the list  
-          flattened_item['index'] = index
+          flattened_item['index'] = start_index + index + 1  # (use +0 if you want 0-based)
 
           if record_type == RecordType.CABIN:
 
@@ -1791,6 +1809,10 @@ def da_flatten_list_agencies(json_list, key, agencyKey, agentKey):
 
   # Create a list of dictionaries for CSV writing
   csv_data = []
+
+  out_dir = "C:/repo/seaware-sync/output_csv"
+  out_path = os.path.join(out_dir, f"{key}.csv")
+  start_index = _existing_rows_without_header(out_path)
 
   if isinstance(json_list, dict):
       
@@ -1830,7 +1852,7 @@ def da_flatten_list_agencies(json_list, key, agencyKey, agentKey):
             if len(agent_ids) > 0:
               agentKey = agent_ids[len(agent_ids) - 1]
 
-            custom_items = {'index': index, 'agency': agencyKey, 'agent': agentKey}
+            custom_items = {'index': start_index + index + 1, 'agency': agencyKey, 'agent': agentKey}
 
             flattened_item = {**custom_items, **flattened_items}
 
@@ -1859,6 +1881,10 @@ def da_flatten_list_bookings(json_list, key, reservationKey, guestKey):
   # Create a list of dictionaries for CSV writing
   csv_data = []
 
+  out_dir = "C:/repo/seaware-sync/output_csv"
+  out_path = os.path.join(out_dir, f"{key}.csv")
+  start_index = _existing_rows_without_header(out_path)
+  
   if isinstance(json_list, dict):
       
       #name = json_list.get('name')
@@ -1897,7 +1923,7 @@ def da_flatten_list_bookings(json_list, key, reservationKey, guestKey):
             if len(client_ids) > 0:
               guestKey = client_ids[len(client_ids) - 1]
 
-            custom_items = {'index': index, 'reservation': reservationKey, 'guest': guestKey}
+            custom_items = {'index': start_index + index + 1, 'reservation': reservationKey, 'guest': guestKey}
 
             flattened_item = {**custom_items, **flattened_items}
 
@@ -2110,6 +2136,7 @@ def clean_row_values(dictionary_data):
 
 import csv
 import os
+import re
 from pathlib import Path
 
 def write_to_csv(data, filename):
@@ -2141,12 +2168,13 @@ def write_to_csv(data, filename):
         # ensure missing keys become empty and clean/format as needed
         return [clean_cell(d.get(k)) for k in fieldnames]
 
-    # Minimal cleaner (keeps your hook)
     def clean_cell(v):
-        # reuse your clean_row_values() if you like, here it’s per-cell:
         if v is None:
             return ""
-        return str(v)
+        s = str(v)
+        s = s.replace('\r', ' ').replace('\n', ' ')  # flatten newlines
+        s = ' '.join(s.split())                      # collapse all whitespace runs
+        return s
 
     # 2) If file exists, ensure header includes all current fieldnames (and reorder if needed)
     if exists:
@@ -2202,6 +2230,16 @@ def check_csv(filename):
       pass  # The file is created and immediately closed, leaving it empty
 
     print_log(f"Created {full_filename}")
+
+import os, csv
+
+def _existing_rows_without_header(path: str) -> int:
+    """Return count of existing data rows (excludes header if present)."""
+    if not os.path.exists(path) or os.path.getsize(path) == 0:
+        return 0
+    with open(path, 'r', newline='', encoding='utf-8') as f:
+        # header + N data rows -> return N
+        return max(sum(1 for _ in f) - 1, 0)
 
 # Using the special variable 
 # __name__
