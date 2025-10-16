@@ -103,8 +103,8 @@ def main():
       # Get the current time
       now = datetime.now()
 
-      # Query 2 hours of history duing day and 1 day history at night (sync runs every 30 minutes)
-      number_days = 2 / 24
+      # Query 4 hours of history duing day and 1 day history at night (sync runs every 30 minutes)
+      number_days = 4 / 24
       now = datetime.now()
       hour = now.hour
       if hour >= 22 or hour <=2:
