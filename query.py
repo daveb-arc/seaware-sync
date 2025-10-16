@@ -33,6 +33,8 @@ class RecordMode(Enum):
     SFPUSH = 4
     INSERT = 5
 
+globalForceWriteReservation = False
+
 def main():
 
   import sys
@@ -108,7 +110,7 @@ def main():
       if hour >= 22 or hour <=2:
         number_days = 1
 
-      #number_days = 5
+      #number_days = 0
 
       delta_days_ago = now - timedelta(days=number_days)
 
@@ -166,11 +168,17 @@ def main():
       full_filename = 'C:/repo/seaware-sync/output_csv/RESERVATION_InvoiceTotals.csv'
       process_bookings_other(full_filename, record_type, record_mode)
 
+      global globalForceWriteReservation
+      globalForceWriteReservation = True
+
       # Process Salesforce Flagged Reservations
       full_filename = 'C:/repo/Salesforce-Exporter-Private/Clients/SEAWARE-BOOKINGS/Salesforce-Exporter/Clients/SEAWARE-BOOKINGS/Export/Booking-Prod.csv'
      # process_seaware(record_type, record_mode, id_value = 'Reservation|' + "11978")
+
       process_bookings_salesforce(full_filename, record_type, record_mode)
       process_bookings_other(full_filename, record_type, record_mode)
+
+      globalForceWriteReservation = True
 
     else:
       process_seaware(record_type, record_mode, '', '')
@@ -1784,19 +1792,21 @@ def da_flatten_list(record_type, record_mode, json_list, access_token, row = Non
              
             should_process_record = True
 
-            sail_date = ''
-            try:
-              sail_date = item['node']['guests'][0]['voyages'][0]['sail']['from']['dateTime']
-            except (KeyError, IndexError, TypeError):
-                continue  # anything missing -> skip
+            if not globalForceWriteReservation:
 
-            if not sail_date or str(sail_date).strip() == '':
+              sail_date = ''
+              try:
+                sail_date = item['node']['guests'][0]['voyages'][0]['sail']['from']['dateTime']
+              except (KeyError, IndexError, TypeError):
+                  continue  # anything missing -> skip
+
+              if not sail_date or str(sail_date).strip() == '':
+                  continue
+
+              from datetime import datetime
+              dt_sail = datetime.strptime(sail_date, "%Y-%m-%dT%H:%M:%S")
+              if dt_sail < datetime.now():
                 continue
-
-            from datetime import datetime
-            dt_sail = datetime.strptime(sail_date, "%Y-%m-%dT%H:%M:%S")
-            if dt_sail < datetime.now():
-              continue
 
           if (should_process_record):
 
