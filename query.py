@@ -1792,21 +1792,21 @@ def da_flatten_list(record_type, record_mode, json_list, access_token, row = Non
              
             should_process_record = True
 
-            if not globalForceWriteReservation:
-
-              sail_date = ''
-              try:
-                sail_date = item['node']['guests'][0]['voyages'][0]['sail']['from']['dateTime']
-              except (KeyError, IndexError, TypeError):
-                  continue  # anything missing -> skip
-
-              if not sail_date or str(sail_date).strip() == '':
-                  continue
-
-              from datetime import datetime
-              dt_sail = datetime.strptime(sail_date, "%Y-%m-%dT%H:%M:%S")
-              if dt_sail < datetime.now():
-                continue
+#            if not globalForceWriteReservation:
+#
+#              sail_date = ''
+#              try:
+#                sail_date = item['node']['guests'][0]['voyages'][0]['sail']['from']['dateTime']
+#              except (KeyError, IndexError, TypeError):
+#                  continue  # anything missing -> skip
+#
+#              if not sail_date or str(sail_date).strip() == '':
+#                  continue
+#
+#              from datetime import datetime
+#              dt_sail = datetime.strptime(sail_date, "%Y-%m-%dT%H:%M:%S")
+#              if dt_sail < datetime.now():
+#                continue
 
           if (should_process_record):
 
@@ -1981,8 +1981,8 @@ def da_flatten_list_bookings(json_list, key, reservationKey, guestKey):
               reservationKey = flattened_items['node_key']
 
             # Make sure reservation queued
-            if reservationKey == '' or not reservation_key_in_file(reservationKey):
-                continue
+#            if reservationKey == '' or not reservation_key_in_file(reservationKey):
+#                continue
             
             client_ids = get_values_by_key_substring(flattened_items, "client_id")
             if len(client_ids) > 0:
