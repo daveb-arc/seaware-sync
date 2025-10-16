@@ -178,7 +178,7 @@ def main():
       process_bookings_salesforce(full_filename, record_type, record_mode)
       process_bookings_other(full_filename, record_type, record_mode)
 
-      globalForceWriteReservation = True
+      globalForceWriteReservation = False
 
     else:
       process_seaware(record_type, record_mode, '', '')
