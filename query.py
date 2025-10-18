@@ -110,7 +110,7 @@ def main():
       if hour >= 22 or hour <=2:
         number_days = 1
 
-      number_days = 0
+      #number_days = 0
 
       delta_days_ago = now - timedelta(days=number_days)
 
