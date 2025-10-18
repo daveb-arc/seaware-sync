@@ -2213,88 +2213,94 @@ import os
 import re
 from pathlib import Path
 
+import os, csv
+from pathlib import Path
+
 def write_to_csv(data, filename):
     """
-    Writes a list of dict rows to CSV:
-    - Ensures 'index' is the first column.
-    - Adds any new columns to the header and realigns existing file rows.
-    - Writes each row's values in the same column order as the header.
+    Append list[dict] rows to CSV with this rule:
+    - If incoming data has MORE columns than the existing CSV header, switch to the incoming columns
+      (rewrite header + realign old rows).
+    - Otherwise, keep the existing header and column order exactly as-is.
+
+    Column order for "incoming columns":
+      - Start with keys from the first dict in their insertion order (Py3.7+ preserves it),
+        then add any new keys encountered in later rows in the order discovered.
+      - If 'index' exists, it's moved to the front.
     """
     if not data:
         return
 
-    # 1) Build fieldnames with 'index' first
-    cols = set()
-    for d in data:
-        cols.update(d.keys())
-    cols.discard('index')
-    fieldnames = ['index'] + sorted(cols)  # keep deterministic order after 'index'
-
     out_dir = "C:/repo/seaware-sync/output_csv"
     os.makedirs(out_dir, exist_ok=True)
     full_filename = os.path.join(out_dir, filename)
-
-    file_path = Path(full_filename)
-    exists = file_path.is_file()
-
-    # Helper to coerce a dict row into list values following fieldnames
-    def row_to_list(d):
-        # ensure missing keys become empty and clean/format as needed
-        return [clean_cell(d.get(k)) for k in fieldnames]
+    p = Path(full_filename)
 
     def clean_cell(v):
         if v is None:
             return ""
-        s = str(v)
-        s = s.replace('\r', ' ').replace('\n', ' ')  # flatten newlines
-        s = ' '.join(s.split())                      # collapse all whitespace runs
-        return s
+        s = str(v).replace("\r", " ").replace("\n", " ")
+        return " ".join(s.split())
 
-    # 2) If file exists, ensure header includes all current fieldnames (and reorder if needed)
-    if exists:
-        with open(full_filename, 'r', newline='', encoding='utf-8') as f:
+    # Build "incoming header" in deterministic, meaningful order
+    incoming_header = []
+    seen = set()
+
+    # 1) first row keys in insertion order
+    for k in data[0].keys():
+        if k not in seen:
+            incoming_header.append(k); seen.add(k)
+    # 2) any new keys from later rows in discovery order
+    for row in data[1:]:
+        for k in row.keys():
+            if k not in seen:
+                incoming_header.append(k); seen.add(k)
+
+    # Move 'index' to front if present
+    if "index" in seen and incoming_header[0] != "index":
+        incoming_header.remove("index")
+        incoming_header.insert(0, "index")
+
+    # Read existing header/rows if file exists
+    if p.is_file() and p.stat().st_size > 0:
+        with open(full_filename, "r", newline="", encoding="utf-8") as f:
             reader = csv.reader(f)
             rows = list(reader)
 
-        if rows:
-            old_header = rows[0]
-        else:
-            old_header = []
+        old_header = rows[0] if rows else []
+        existing_rows = rows[1:] if len(rows) > 1 else []
 
-        # If header differs (new cols or different order), rewrite entire file with new header
-        if old_header != fieldnames:
-            # Map old header indices
+        # Decide which header to use
+        # Incoming "wins" only if it has MORE columns than existing header
+        if len(incoming_header) > len(old_header):
+            header = incoming_header[:]  # switch to incoming
+            # Rewrite existing file with new header and realigned rows
             old_idx = {name: i for i, name in enumerate(old_header)}
-            # Rebuild all existing data rows to match new header order/length
-            rebuilt = [fieldnames]
-            for r in rows[1:]:
+            rebuilt = [header]
+            for r in existing_rows:
                 new_r = []
-                for col in fieldnames:
+                for col in header:
                     if col in old_idx and old_idx[col] < len(r):
                         new_r.append(r[old_idx[col]])
                     else:
-                        new_r.append("")  # new column => blank for historical rows
+                        new_r.append("")  # blank for new columns
                 rebuilt.append(new_r)
+            with open(full_filename, "w", newline="", encoding="utf-8") as f:
+                csv.writer(f).writerows(rebuilt)
+        else:
+            # Keep existing header exactly
+            header = old_header[:]
+    else:
+        # No existing file: start with incoming header
+        header = incoming_header[:]
+        with open(full_filename, "w", newline="", encoding="utf-8") as f:
+            csv.writer(f).writerow(header)
 
-            with open(full_filename, 'w', newline='', encoding='utf-8') as f:
-                writer = csv.writer(f)
-                writer.writerows(rebuilt)
-
-            exists = True  # file now rewritten with correct header/order
-
-    # 3) If file didn’t exist (or was empty), write header first
-    if not exists or os.path.getsize(full_filename) == 0:
-        with open(full_filename, 'w', newline='', encoding='utf-8') as f:
-            writer = csv.writer(f)
-            writer.writerow(fieldnames)
-
-    # 4) Append new rows in the exact fieldnames order
-    with open(full_filename, 'a', newline='', encoding='utf-8') as f:
+    # Append incoming rows following the chosen header
+    with open(full_filename, "a", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         for d in data:
-            writer.writerow(row_to_list(d))
-
-#    print_log(f"Written {full_filename}")
+            writer.writerow([clean_cell(d.get(col, "")) for col in header])
 
 def check_csv(filename):
     
