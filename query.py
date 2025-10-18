@@ -110,7 +110,7 @@ def main():
       if hour >= 22 or hour <=2:
         number_days = 1
 
-      #number_days = 0
+      number_days = 0
 
       delta_days_ago = now - timedelta(days=number_days)
 
@@ -461,7 +461,7 @@ def process_bookings_salesforce(full_filename, record_type, record_mode):
   if len(data_frame) <= 0:
     return
 
-  queries_remaining = 500
+  queries_remaining = 1000
   for index, row in data_frame.iterrows():
 
     booking_number_seaware = row['Booking_Number_Seaware__c']
@@ -476,8 +476,8 @@ def process_bookings_salesforce(full_filename, record_type, record_mode):
     process_seaware(record_type, record_mode, id_value = 'Reservation|' + booking_number_seaware)
 
     queries_remaining -= 1
-#    if queries_remaining <= 0:
-#      break
+    if queries_remaining <= 0:
+      break
 
 def process_bookings_other(full_filename, record_type, record_mode):
     
