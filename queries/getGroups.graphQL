@@ -1,0 +1,83 @@
+
+query getGroups {
+    groups(
+        params: {
+        startSailDateTime: {
+            from: "SHIP_FROMDATETIME_VALUE",
+            to: "SHIP_TODATETIME_VALUE"
+        }
+        startSailShip: {
+            key: "SHIP_VALUE"
+        }
+    }) {
+        edges {
+            node {
+                id
+                key
+                name
+                agent {
+                    lastName
+                }
+                agency {
+                    name
+                }
+                charter
+                invoiceTotals {
+                    invoiceTotal
+                    grandTotal
+                    chargeTotal
+                    commissionTotal
+                    commissionDue
+                    commissionPaid
+                    pendingCommission
+                    overpaidCommission
+                    grossUp
+                    grossDue
+                    grossDueClient
+                    pendingRefunds
+                    refunds
+                    invoicePaid
+                    paidInFull
+                }
+                amenities {
+                    requestID
+                    seqN # sequence number
+                    effectiveDate
+                    quantity
+                    dateTimeRange {
+                        to
+                        from
+                    }
+                    isAuto
+                    addon {
+                        key
+                        name
+                    }
+                }
+                amenityPrices {
+                    addon {
+                        key
+                        name
+                    }
+                    priceCode
+                    prices {
+                        type
+                        subType1
+                        subType2
+                        subType3
+                        amount
+                    }
+                }
+            }
+            cursor
+        }
+
+        pageInfo {
+          hasPreviousPage
+          hasNextPage
+          startCursor
+          endCursor  
+        }             
+
+    }
+}

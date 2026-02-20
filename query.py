@@ -25,6 +25,7 @@ class RecordType(Enum):
     CABIN = 6
     SHIP = 7
     RESERVATION_OTHER = 8
+    CRUISE_GROUP = 9
 
 class RecordMode(Enum):
     UPDATE = 1
@@ -64,6 +65,8 @@ def main():
      record_type = RecordType.CLIENT
   elif record_type_input == RecordType.CRUISE.name:
      record_type = RecordType.CRUISE
+  elif record_type_input == RecordType.CRUISE_GROUP.name:
+     record_type = RecordType.CRUISE_GROUP
   elif record_type_input == RecordType.CABIN.name:
      record_type = RecordType.CABIN
 
@@ -581,6 +584,9 @@ def process_inventory_cruise(record_type):
     # Get Voyage Details
     json_res = process_seaware(RecordType.CABIN, RecordMode.QUERY, '', '', voyage)
 
+    # Get Voyage Group Details
+    json_res = process_seaware(RecordType.CRUISE_GROUP, RecordMode.QUERY, '', '', voyage)
+
     # Get Available Cabins
 #    cabins = json_res.get('data').get('availableCabins')
 
@@ -656,6 +662,8 @@ def process_seaware(record_type, record_mode, fromDateTime = None, toDateTime = 
     record_type_value = 'availableVoyages'
   elif record_type == RecordType.CABIN:
     record_type_value = 'availableCabins'
+  elif record_type == RecordType.CRUISE_GROUP:
+    record_type_value = 'groups'
   elif record_type == RecordType.SHIP:
     record_type_value = 'cabins'
   elif record_type == RecordType.RESERVATION_OTHER:
@@ -1516,6 +1524,10 @@ def fetch_items(record_type, record_mode, fromDateTime, toDateTime, headers, row
     
     input_query = 'AvailableVoyages'
 
+  elif record_type == RecordType.CRUISE_GROUP:
+    
+    input_query = 'Groups'
+
   elif record_type == RecordType.CABIN:
     
     input_query = 'AvailableCabins'
@@ -1556,7 +1568,7 @@ def fetch_items(record_type, record_mode, fromDateTime, toDateTime, headers, row
         # Columns: Id	Name	AgencyID__c	Seaware_Id__c
         query = query.replace('ALTID_VALUE', str(row['Account.AgencyID__c']))
 
-    elif record_type == RecordType.CABIN:
+    elif (record_type == RecordType.CABIN or record_type == RecordType.CRUISE_GROUP):
       
       if row is not None:
         query = query.replace('SHIP_TODATETIME_VALUE', str(row['sail'].get('to').get('dateTime')))
@@ -1843,21 +1855,27 @@ def da_flatten_list(record_type, record_mode, json_list, access_token, row = Non
           # Add an identifier for each item in the list  
           flattened_item['index'] = start_index + index + 1  # (use +0 if you want 0-based)
 
-          if record_type == RecordType.CABIN:
+          if (record_type == RecordType.CABIN or record_type == RecordType.CRUISE_GROUP):
 
             #name = json_list.get('name')
 
             sail_to_datetime = str(row['sail'].get('to').get('dateTime'))
             sail_from_datetime = str(row['sail'].get('from').get('dateTime'))
             sail_ship = str(row['sail'].get('ship').get('key'))
-            flattened_item['sail_to_datetime'] = sail_to_datetime
-            flattened_item['sail_from_datetime'] = sail_from_datetime
-            flattened_item['sail_ship'] = sail_ship
+
+            custom_fields = {
+                'sail_to_datetime': sail_to_datetime,
+                'sail_from_datetime': sail_from_datetime,
+                'sail_ship': sail_ship
+            }
+
+            # Put sail fields FIRST
+            flattened_item = {**custom_fields, **flattened_item}
 
           csv_data.append(flattened_item)
 
       else:
-          print_log(f"Skipping non-dict item in list '{record_type.name}': {item}")
+        print_log(f"Skipping non-dict item in list '{record_type.name}': {item}")
 
 
   # Write to CSV file named after the key
